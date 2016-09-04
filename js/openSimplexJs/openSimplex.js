@@ -1,7 +1,7 @@
 /* jshint esversion:6 */
-//Initializes the class using a permutation array generated from a 64-bit seed.
-//Generates a proper permutation (i.e. doesn't merely perform N successive pair swaps on a base array)
-//Uses a simple 64-bit LCG.
+// OpenSimplex Noise by Kurt Spencer
+// Ported to JS (poorly) by Eric Julius
+
 function OpenSimplexNoise(seed) {
   'use strict';
   this.STRETCH_CONSTANT_2D = -0.211324865405187;    //(1/Math.sqrt(2+1)-1)/2;
@@ -30,7 +30,7 @@ OpenSimplexNoise.prototype._getPermGradIndex3D = function(perm) {
 
 //Initializes the class using a permutation array generated from a 64-bit seed.
 //Generates a proper permutation (i.e. doesn't merely perform N successive pair swaps on a base array)
-//Uses a simple 64-bit LCG. 
+//Uses a simple 64-bit LCG.
 // NOTE: The JS version I've 'ported' uses a 32-bit LCG.
 OpenSimplexNoise.prototype._getPerm = function(seed) {
   'use strict';
