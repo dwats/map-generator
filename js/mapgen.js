@@ -1,39 +1,41 @@
 /* jshint esversion:6 */
-'use strict';
-let frequency;
+const tempMult = 1.25;
+const moistMult = 1.25;
 
+/**
+ * @constructor
+ * @param {Object} settings Object containing width, height, frequency and seed data
+ */
+function TerrainGenerator(settings) {
+	'use strict';
+	console.log(settings);
+	this.width = Number(settings.width) || 512;
+	this.height = Number(settings.height) || 512;
+	this.frequency = Number(settings.frequency) || 0.0009;
+	this.seed = Number(settings.seed) || Math.random();
+	this.moistureFrequency = this.frequency * moistMult;
+	this.temperatureFrequency = this.frequency * tempMult;
+	this.map = {
+		height : [],
+		moisture : [],
+		temperature : [],
+		biome : []
+	};
+}
 /**
  * Start new map generation
  */
-function startGen() {
-	let showBiomes = document.getElementById('showBiomes').checked;
-	let seed = Number(document.getElementById('mapSeed').value);
-	setStartingValues();
-	initFrame(showBiomes, seed);
-}
+TerrainGenerator.prototype.makeMap = function() {
+	'use strict';
+	console.log("seed", this.seed );
 
-/**
- * Initialize terrain, moisture and temperature arrays then pass them to `drawMap` be drawn to canvas.
- * @param {Boolean} showBiomes If true map, mMap and tMap are drawn to canvas, else only map.
- * @param {Number} userSeed A number seed used in the 32-bit OpenSimplex LCG
- */
-function initFrame(showBiomes, userSeed) {
-	let seed = userSeed || Math.random();
-	document.getElementById('mapSeed').value = seed;
-	console.log("seed",seed);
-
-	let moistureFreq = frequency * 1.25;
-	let temperatureFreq = frequency * 1.25;
-	let terrainMap = getArrayOfNoise(gridX, gridY, true, frequency, seed);
-	let moistureMap = getArrayOfNoise(gridX, gridY, false, moistureFreq, seed);
-	let temperatureMap = getArrayOfNoise(gridX, gridY, false, temperatureFreq, seed);
-
-	//console.log("temp", temperatureMap);
-	//console.log("moist", moistureMap);
-	//drawMap(false, moistureMap);
-	//drawMap(false, temperatureMap);
-	drawMap(showBiomes, terrainMap, moistureMap, temperatureMap);
-}
+	this.map.height = this._getNoise(this.frequency);
+	this.seed *= 0.25;
+	this.map.moisture = this._getNoise(this.moistureFrequency);
+	this.seed *= 0.45;
+	this.map.temperature = this._getNoise(this.temperatureFrequency);
+	this.map.biome = this._getBiomeMap();
+};
 
 /**
  * Draw various 2D arrays to canvas.
@@ -43,10 +45,11 @@ function initFrame(showBiomes, userSeed) {
  * @param {Array} tMap Temperature 2D array
  */
 function drawMap(showBiome, map, mMap, tMap) {
+	'use strict';
 	if (showBiome) {
 		drawFrame(map, mMap, tMap);
 	} else {
-		frameDraw(map);
+		drawMonoArray(map);
 	}
 	updateCanvas();
 }
@@ -59,29 +62,36 @@ function drawMap(showBiome, map, mMap, tMap) {
  * @param {Number} freq Double Determines frequency of returned noise array
  * @return {Array} Starting array, but now filled with RND values
  */
-function getArrayOfNoise(dimX, dimY, canFBM, freq, seed) {
+TerrainGenerator.prototype._getNoise = function(frequency) {
+	'use strict';
 	let arr = [];
-	let Simplex = new OpenSimplexNoise(seed || Math.random());
+	let Simplex = new OpenSimplexNoise(this.seed || Math.random());
 
-	for (let x = 0; x < dimX; x++) {
+	for (let x = 0; x < this.width; x++) {
 		arr.push([]);
-		for (let y = 0; y < dimY; y++) {
-			if (canFBM) {
-				arr[x].push(terrainMask(dimX, dimY, x, y, fracBrownianMotion(16, Simplex, x, y, freq)));
-			} else {
-				arr[x].push(terrainMask(dimX, dimY, x, y, fracBrownianMotion(8, Simplex, x, y, freq)));
+		for (let y = 0; y < this.height; y++) {
+			let nx = x / this.width;
+			let ny = y / this.height;
+			let brownNoise = this._brownianMotion(16, Simplex, nx, ny, frequency);
+			let maskedNoise = this._terrainMask(nx, ny, brownNoise);
+
+			if (x === 128 && y === 128) {
+				console.log("brown", brownNoise);
+				console.log("masked", maskedNoise);
 			}
+			arr[x].push(maskedNoise);
 		}
 	}
 
 	return arr;
-}
+};
 
 /**
  * Run a noise value through fractional Brownian Moition for a given number of octaves (iterations)
  */
-function fracBrownianMotion(octaves, Simplex, x, y, inFreq) {
-	let freq = Number(inFreq);
+TerrainGenerator.prototype._brownianMotion = function(octaves, Simplex, x, y, frequency) {
+	'use strict';
+	let freq = frequency;
 	let gain = 0.65;
 	let amplitude = gain;
 	let lacunarity = 2.1042;
@@ -92,128 +102,110 @@ function fracBrownianMotion(octaves, Simplex, x, y, inFreq) {
 		freq *= lacunarity;
 		amplitude *= gain;
 	}
-	return noise ;
-}
+
+	return noise;
+};
 
 /**
  * Provide a masked result given X and Y coordinates as well as X and Y dimensions.
  */
-function terrainMask(dimX, dimY, x, y, noise) {
-	let distX = Math.abs(x - dimX * 0.5);
-	let distY = Math.abs(y - dimY * 0.5);
-	let distance = Math.sqrt(distX * distX + distY * distY);
-
-	let maxWidth = Math.min(dimX, dimY) * 0.5 - 10.0;
-	let delta = distance / maxWidth;
-	let gradient = delta * delta;
-	noise *= Math.max(0, 1.0 - gradient);
-
+ //TODO figure out why this isn't masking correctly.
+TerrainGenerator.prototype._terrainMask = function(x, y, noise) {
+	'use strict';
+	let a = 0.05; // "Height" modifier
+	let b = 1.5; // "Edge" modifier
+	let c = 2; // "Drop off" modifier
+	let nx = (x / this.width) - 0.5;
+	let ny = (y / this.height) - 0.5;
+	let d = 2 * Math.sqrt(nx * nx + ny * ny);
+	noise = Math.max((noise + a) * (1 - b * Math.pow(d, c)), 0);
 	return noise;
-}
+
+	// let distance = Math.sqrt(this.width * this.width + this.height * this.height);
+	//
+	// let maxWidth = Math.min(this.width, this.height) * 0.5 - 10.0;
+	// let delta = distance / maxWidth;
+	// let gradient = delta * delta;
+	// noise *= Math.max(0, 1.0 - gradient);
+	//
+	// return noise;
+};
 
 /**
  * A poor attempt at 'scaling' a given value
  */
-function scaleValue(value, multiplier, max) {
-	let output = Math.abs(value) * multiplier & max;
-	return output;
-}
-
-/**
- * Given a 2D array, draw to canvas using a homemade canvas drawing function
- */
-function drawFrame(terrain, moisture, temperature) {
-	for (let x = 0; x < gridX; x++) {
-		for (let y = 0; y < gridY; y++) {
-			rgbPixelDraw(x, y, getPixelRGB(terrain[x][y], moisture[x][y], temperature[x][y]));
-		}
-	}
-}
+TerrainGenerator.prototype._scaleValue = function(input, min, max) {
+	'use strict';
+	return Math.min(Math.max(min, input * max), max);
+};
 
 /**
  * Determine the Biome of a given pixel based on height, moisture and temperature.
  */
-function getPixelRGB(height, moisture, temperature) {
-	let sHeight = scaleValue(height, 200, 255);
-	let sMoisture = scaleValue(moisture, 200, 100);
-	let sTemperature = scaleValue(temperature, 200, 100);
-	let biome = getBiome(sHeight, sMoisture, sTemperature);
-	let rgb = [];
-	//console.log("h", height, "m", sMoisture, "t", sTemperature, "b", biome);
+TerrainGenerator.prototype._getBiomeMap = function() {
+	'use strict';
+	for (let x = 0; x < this.width; x++) {
+		this.map.biome.push([]);
+		for (let y = 0; y < this.height; y++) {
+			let sHeight = this._scaleValue(this.map.height[x][y], 0, 255);
+			let sMoisture = this._scaleValue(this.map.moisture[x][y], 0, 100);
+			let sTemperature = this._scaleValue(this.map.temperature[x][y], 0, 100);
+			let biomeId = this._getBiomeId(sHeight, sMoisture, sTemperature);
+			let rgb = [];
 
-		/**
-		 * 0 - Tundra
-		 * 1 - Desert
-		 * 2 - Grass Desert
-		 * 3 - Savanna
-		 * 4 - Seasonal Forest (woods)
-		 * 5 - Taiga
-		 * 6 - Temperate Forest (seasonal forest)
-		 * 7 - Temperate Rain Forest (forest)
-		 * 8 - Swamp (rain forest)
-		 * 9 - Tropical Rain Forest (swamp)
-		 * 10 - Barren
-		 * 11 - Shallow Ocean
-		 * 12 - Deep Ocean
-		 * -1 - Error
-		 */
-
-	switch(biome) {
-		case 0:
-			rgb = [235,235,235];
-			break;
-		case 1:
-			rgb = [224,255,255];
-			break;
-		case 2:
-			rgb = [238,232,170];
-			break;
-		case 3:
-			rgb = [144,238,144];
-			break;
-		case 4:
-			rgb = [128,128,0];
-			break;
-		case 5:
-			rgb = [107,142,35];
-			break;
-		case 6:
-			rgb = [85,107,47];
-			break;
-		case 7:
-			rgb = [34,139,34];
-			break;
-		case 8:
-			rgb = [46,139,87];
-			break;
-		case 9:
-			rgb = [0,100,0];
-			break;
-		case 10:
-			rgb = [119,136,153];
-			break;
-		case 11:
-			rgb = [15,30,125];
-			break;
-		case 12:
-			rgb = [10,30,100];
-			break;
-		default:
-			console.log("BiomeErr H:", sHeight, "M:", sMoisture, "T:", sTemperature);
-			rgb = [250,128,114];
+			switch(biomeId) {
+				case 0: //0 - Tundra
+					rgb = [235,235,235];
+					break;
+				case 1: //1 - Desert
+					rgb = [224,255,255];
+					break;
+				case 2: //2 - Grass Desert
+					rgb = [238,232,170];
+					break;
+				case 3: //3 - Savanna
+					rgb = [144,238,144];
+					break;
+				case 4: //4 - Seasonal Forest (woods)
+					rgb = [128,128,0];
+					break;
+				case 5: //5 - Taiga
+					rgb = [107,142,35];
+					break;
+				case 6: //6 - Temperate Forest (seasonal forest)
+					rgb = [85,107,47];
+					break;
+				case 7: //7 - Temperate Rain Forest (forest)
+					rgb = [34,139,34];
+					break;
+				case 8: //8 - Swamp (rain forest)
+					rgb = [46,139,87];
+					break;
+				case 9: //9 - Tropical Rain Forest (swamp)
+					rgb = [0,100,0];
+					break;
+				case 10: //10 - Barren
+					rgb = [119,136,153];
+					break;
+				case 11: //11 - Shallow Ocean
+					rgb = [15,30,125];
+					break;
+				case 12: //12 - Deep Ocean
+					rgb = [10,30,100];
+					break;
+				default: // Error
+					console.log("BiomeErr H:", sHeight, "M:", sMoisture, "T:", sTemperature);
+					rgb = [250,128,114];
+			}
+			this.map.biome[x].push(rgb);
+		}
 	}
-
-	for (let i = 0; i < rgb.length; i++) {
-		rgb[i] = (rgb[i]/1.25) + scaleValue(height, 100, 75);
-	}
-	return rgb;
-
-}
+};
 
 /**
  * Helper function to get pixel biome.
  */
-function getBiome(height, moisture, temperature) {
+TerrainGenerator.prototype._getBiomeId = function(height, moisture, temperature) {
 
 	if (height >= 225 || (moisture < 50 && temperature < 25 && height >= 75)) {
 		return 0;
@@ -245,4 +237,4 @@ function getBiome(height, moisture, temperature) {
 		return -1;
 	}
 
-}
+};
