@@ -20,11 +20,11 @@
 		</div>
 		<div>
 			<div>Resolution Scale</div>
-			<input id="scale" value=2>
+			<input id="scale" value=1>
 		</div>
 		<div>
 			<div>Frequency</div>
-			<input id="frequency" value=0.0009>
+			<input id="frequency" value=2>
 		</div>
 		<div>
 			<div>Seed</div>
@@ -34,7 +34,7 @@
 			<input id="showBiomes" type="checkbox" checked>Show Biomes
 		</div>
 		<hr/>
-		<button id="gen" onclick="startGen()">Generate</button>
+		<button id="gen" onclick="newMap()">Generate</button>
 		<span id="cursor-pos"></span>
 	</div>
 	<!--Canvas-->
@@ -43,5 +43,30 @@
 	<script type="text/javascript" src="js/canvas.js"></script>
 	<script type="text/javascript" src="js/mapgen.js"></script>
 	<script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
+	<script type="text/javascript" src="js/three.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script>
+
+		function newMap() {
+			setInitValues();
+			let settings = {
+				height: $("#height").val(),
+				width: $("#width").val(),
+				frequency: $("#frequency").val(),
+				seed: $("#mapSeed").val()
+			}
+			let terrainGenerator = new TerrainGenerator(settings);
+			terrainGenerator.makeMap();
+			drawMonoArray(terrainGenerator.map.height);
+			updateCanvas();
+			console.log(terrainGenerator.map.height);
+		}
+
+		window.onload = () => {
+			setInitValues();
+			newMap();
+		}
+
+	</script>
 </body>
 </html>
