@@ -16,10 +16,16 @@ function TerrainGenerator(settings) {
 	this.moistureFrequency = this.frequency * moistMult;
 	this.temperatureFrequency = this.frequency * tempMult;
 	this.map = {
+		baseHeight: [],
 		height : [],
 		moisture : [],
 		temperature : [],
 		biome : []
+	};
+	this.mask = {
+		a: 0.05,
+		b: 1.5,
+		c: 2
 	};
 }
 /**
@@ -29,12 +35,27 @@ TerrainGenerator.prototype.makeMap = function() {
 	'use strict';
 	console.log("seed", this.seed );
 
-	this.map.height = this._getNoise(this.frequency);
-	this.seed *= 0.25;
-	this.map.moisture = this._getNoise(this.moistureFrequency);
-	this.seed *= 0.45;
-	this.map.temperature = this._getNoise(this.temperatureFrequency);
-	this.map.biome = this._getBiomeMap();
+	this.map.baseHeight = this._getNoise(this.frequency);
+	this.map.height = this._terrainMask(this.map.baseHeight, this.mask.a, this.mask.b, this.mask.c);
+	//this.seed *= 0.25;
+	//this.map.moisture = this._getNoise(this.moistureFrequency);
+	//this.seed *= 0.45;
+	//this.map.temperature = this._getNoise(this.temperatureFrequency);
+	//this.map.biome = this._getBiomeMap();
+};
+
+TerrainGenerator.prototype.updateSeed = function(seed) {
+	this.seed = seed;
+	this.map.baseHeight = this._getNoise(this.frequency);
+	this.map.height = this._terrainMask(this.map.baseHeight, this.mask.a, this.mask.b, this.mask.c);
+};
+
+TerrainGenerator.prototype.updateMask = function(a,b,c) {
+	'use strict';
+	this.mask.a = Number(a);
+	this.mask.b = Number(b);
+	this.mask.c = Number(c);
+	this.map.height = this._terrainMask(this.map.baseHeight, a, b, c);
 };
 
 /**
@@ -55,12 +76,9 @@ function drawMap(showBiome, map, mMap, tMap) {
 }
 
 /**
- * Return array of a specified size filled with RND values or zeros.
- * @param {Number} dimX Integer width of noise array
- * @param {Number} dimY Integer height of noise array
- * @param {Boolean} canFBM Should the output be run through fractional brownian motion
- * @param {Number} freq Double Determines frequency of returned noise array
- * @return {Array} Starting array, but now filled with RND values
+ * Return two dimensional array of noise.
+ * @param {Number} frequency determines frequency of returned noise array
+ * @return {Array}
  */
 TerrainGenerator.prototype._getNoise = function(frequency) {
 	'use strict';
@@ -72,14 +90,8 @@ TerrainGenerator.prototype._getNoise = function(frequency) {
 		for (let y = 0; y < this.height; y++) {
 			let nx = x / this.width;
 			let ny = y / this.height;
-			let brownNoise = this._brownianMotion(16, Simplex, nx, ny, frequency);
-			let maskedNoise = this._terrainMask(nx, ny, brownNoise);
-
-			if (x === 128 && y === 128) {
-				console.log("brown", brownNoise);
-				console.log("masked", maskedNoise);
-			}
-			arr[x].push(maskedNoise);
+			let brownNoise = this._brownianMotion(8, Simplex, nx, ny, frequency);
+			arr[x].push(brownNoise);
 		}
 	}
 
@@ -110,25 +122,23 @@ TerrainGenerator.prototype._brownianMotion = function(octaves, Simplex, x, y, fr
  * Provide a masked result given X and Y coordinates as well as X and Y dimensions.
  */
  //TODO figure out why this isn't masking correctly.
-TerrainGenerator.prototype._terrainMask = function(x, y, noise) {
+TerrainGenerator.prototype._terrainMask = function(map, a, b, c) {
 	'use strict';
-	let a = 0.05; // "Height" modifier
-	let b = 1.5; // "Edge" modifier
-	let c = 2; // "Drop off" modifier
-	let nx = (x / this.width) - 0.5;
-	let ny = (y / this.height) - 0.5;
-	let d = 2 * Math.sqrt(nx * nx + ny * ny);
-	noise = Math.max((noise + a) * (1 - b * Math.pow(d, c)), 0);
-	return noise;
-
-	// let distance = Math.sqrt(this.width * this.width + this.height * this.height);
-	//
-	// let maxWidth = Math.min(this.width, this.height) * 0.5 - 10.0;
-	// let delta = distance / maxWidth;
-	// let gradient = delta * delta;
-	// noise *= Math.max(0, 1.0 - gradient);
-	//
-	// return noise;
+	let output = [];
+	for (let x = 0; x < this.width; x++) {
+		output.push([]);
+		for (let y = 0; y < this.height; y++) {
+			let nx = (x / this.width) - 0.5;
+			let ny = (y / this.height) - 0.5;
+			let e = map[x][y];
+			e = Math.pow(e, 5);
+			let d = 2 * Math.sqrt(nx * nx + ny * ny);
+			e = e + a - b * Math.pow(d, c);
+			if (e < 0.0) e = 0.0;
+			output[x].push(e);
+		}
+	}
+	return output;
 };
 
 /**
