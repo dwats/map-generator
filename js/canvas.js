@@ -5,19 +5,20 @@ let ctx = canvas.getContext("2d");
 
 // Monochrome
 function drawMonoArray(frame) {
-	let index;
-
+	'use strict';
 	for (let x = 0; x < gridX; x++) {
 		for (let y = 0; y < gridY; y++) {
-			index = (x + y * canvasWidth) * 4;
-			let pixel = Math.max(frame[x][y] * 255, 0);
-
-			canvasData.data[index + 0] = pixel;
-			canvasData.data[index + 1] = pixel;
-			canvasData.data[index + 2] = pixel;
+			let index = (x + y * canvasWidth) * 4;
+			let pixel = frame[x][y] * 255;
+			if (pixel < 0) pixel = 0;
+			if (pixel > 255) pixel = 255;
+			for (let i = 0; i < 3; i++) {
+				canvasData.data[index + i] = pixel;
+			}
 			canvasData.data[index + 3] = 255;
 		}
 	}
+	ctx.putImageData(canvasData, 0, 0);
 }
 
 function drawRgbPixel(x, y, rgb) {
@@ -29,7 +30,11 @@ function drawRgbPixel(x, y, rgb) {
 }
 
 let updateCanvas = function() {
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.save();
 	ctx.putImageData(canvasData, 0,0);
+	ctx.drawImage(canvas, 0, 0);
+	ctx.restore();
 };
 
 function setInitValues() {
