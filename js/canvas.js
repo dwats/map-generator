@@ -6,11 +6,10 @@ let ctx = canvas.getContext("2d");
 // Monochrome
 function drawMonoArray(frame) {
 	'use strict';
-	for (let x = 0; x < gridX; x++) {
-		for (let y = 0; y < gridY; y++) {
+	for (let x = 0; x < frame.length; x++) {
+		for (let y = 0; y < frame[x].length; y++) {
 			let index = (x + y * canvasWidth) * 4;
-			let pixel = frame[x][y] * 255;
-			if (pixel < 0) pixel = 0;
+			let pixel = (frame[x][y] + 1) / 2.0 * 255;
 			if (pixel > 255) pixel = 255;
 			for (let i = 0; i < 3; i++) {
 				canvasData.data[index + i] = pixel;
@@ -21,12 +20,17 @@ function drawMonoArray(frame) {
 	ctx.putImageData(canvasData, 0, 0);
 }
 
-function drawRgbPixel(x, y, rgb) {
-	let index = (x + y * canvasWidth) * 4;
-	canvasData.data[index + 0] = rgb[0];
-	canvasData.data[index + 1] = rgb[1];
-	canvasData.data[index + 2] = rgb[2];
-	canvasData.data[index + 3] = 255;
+function drawRgbArray(frame) {
+	for (let x = 0; x < frame.length; x++) {
+		for (let y = 0; y < frame[x].length; y++) {
+			let index = (x + y * canvasWidth) * 4;
+			for (let i = 0; i < 3; i++) {
+				canvasData.data[index + i] = frame[x][y][i];
+			}
+			canvasData.data[index + 3] = 255;
+		}
+	}
+	ctx.putImageData(canvasData, 0, 0);
 }
 
 let updateCanvas = function() {
@@ -50,15 +54,13 @@ function setInitValues() {
 	canvas.setAttribute("style", "border-style:solid; border-width: 1px; image-rendering: pixelated;" +
 		"width:" + Math.round(canvasWidth*drawScale) + "px; height:" + Math.round(canvasHeight*drawScale) + "px;");
 	$("#canvas-shell").append(canvas);
-
-	gridY = canvasHeight;
-	gridX = canvasWidth;
-	canvas.addEventListener('mousemove', function(evt) {
-		let x = (evt.clientX - canvas.offsetLeft) / drawScale;
-		let y = (evt.clientY - canvas.offsetTop) / drawScale;
-	  var pos = x + ', ' + y;
-		var rawRGB = ctx.getImageData(x, y, 1, 1).data;
-		let message = pos + ' rgb(' + rawRGB[0] + ', ' + rawRGB[1] + ', ' + rawRGB[2] + ')';
-	  document.getElementById('cursor-pos').innerHTML = message;
-	}, false);
 }
+
+canvas.addEventListener('mousemove', function(evt) {
+	let x = evt.offsetX;
+	let y = evt.offsetY;
+	var pos = x + ', ' + y;
+	var rawRGB = ctx.getImageData(x, y, 1, 1).data;
+	let message = pos + ' rgb(' + rawRGB[0] + ', ' + rawRGB[1] + ', ' + rawRGB[2] + ')';
+	document.getElementById('cursor-pos').innerHTML = message;
+}, false);
