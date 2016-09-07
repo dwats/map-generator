@@ -3,66 +3,141 @@
 <head>
 	<title>Map Gen</title>
 	<link rel="stylesheet" type="text/css" href="css/base.css">
-	<style>
-		#clear {
-			float:right;
-		}
-	</style>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 </head>
 <body>
-	<h1>Map Gen</h1>
-	<div>Creating terrain with simple biomes using OpenSimplex noise along with Brownian Motion. Biomes are generated from two additional 2D arrays representing temperature and moisture.</div>
-	<!--Inputs/controls-->
-	<div id="controls">
-		<div>
-			<div>Dimensions (<strong>w x h</strong> in pixels)</div>
-			<input id="width" value=512> x <input id="height" value=512>
+	<div class="container-fluid">
+		<h1>Map Gen</h1>
+		<div>Creating terrain with simple biomes using OpenSimplex noise along with Brownian Motion. Biomes are generated from two additional 2D arrays representing temperature and moisture.</div>
+		<!-- User Inputs -->
+		<div class="row">
+			<!-- Canvas/Array Dimensions and Resolution Scaling -->
+			<div class="col-md-4">
+				<h3>Canvas Dimensions and Resolution Scale</h3>
+				<div class="row">
+					<div class="col-md-12">
+						<form class="form-inline">
+							<div class="form-group">
+								<label for="width">Width</label>
+								<input type="number" class="form-control" id="width" placeholder="512" min=12 value=512>
+							</div>
+							<div class="form-group">
+								<label for="height">Height</label>
+								<input type="number" class="form-control" id="height" placeholder="512" min=12 value=512>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-3"><strong>Resolution Scale</strong></div>
+					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=1></div>
+				</div>
+			</div>
+			<!-- Map Seed and Frequency -->
+			<div class="col-md-4">
+				<h3>Seed and Noise Frequency</h3>
+				<div class="row">
+					<div class="col-md-2"><strong>Seed</strong></div>
+					<div class="col-md-8"><input id="seed" type="range" min=0.01 max=1 step=0.01></div>
+				</div>
+				<div class="row">
+					<div class="col-md-2"><strong>Frequency</strong></div>
+					<div class="col-md-8"><input id="frequency" type="range" min=0.25 max=10 step=0.25 value=1></div>
+				</div>
+			</div>
+			<!-- Map Masking -->
+			<div class="col-md-4">
+				<h3>Masking</h3>
+				<div class="row">
+					<div class="col-md-2"><strong>a</strong></div>
+					<div class="col-md-8"><input id="mask-a" type="range" min=0.0 max=1.0 step=0.01 value=0.1></div>
+					<div id="a-val" class="col-md-2">0.1</div>
+				</div>
+				<div class="row">
+					<div class="col-md-2"><strong>b</strong></div>
+					<div class="col-md-8"><input id="mask-b" type="range" min=0.0 max=2.0 step=0.01 value=0.3></div>
+					<div id="b-val" class="col-md-2">0.3</div>
+				</div>
+				<div class="row">
+					<div class="col-md-2"><strong>c</strong></div>
+					<div class="col-md-8"><input id="mask-c" type="range" min=0.0 max=10.0 step=0.1 value=2.0></div>
+					<div id="c-val" class="col-md-2">2.0</div>
+				</div>
 		</div>
-		<div>
-			<div>Resolution Scale</div>
-			<input id="scale" value=1>
+		<!-- Generate Button -->
+		<div class="row">
+			<div class="col-md-12 text-center">
+				<button id="gen" class="btn btn-success" onclick="newMap()">Generate</button>
+			</div>
 		</div>
-		<div>
-			<div>Frequency</div>
-			<input id="frequency" value=2>
+		<div class="row">
+			<div class="col-md-12 text-center">
+				<span id="cursor-pos"></span>
+			</div>
 		</div>
-		<div>
-			<div>Seed</div>
-			<input id="mapSeed" value=0.08510254169161069>
+
+		<!--Canvas-->
+		<div class="row">
+			<div class="col-md-12 text-center">
+				<div id="canvas-shell"></div>
+			</div>
 		</div>
-		<div>
-			<input id="showBiomes" type="checkbox" checked>Show Biomes
-		</div>
-		<hr/>
-		<button id="gen" onclick="newMap()">Generate</button>
-		<span id="cursor-pos"></span>
+
 	</div>
-	<!--Canvas-->
-	<div id="canvas-shell"></div>
+
+
 	<!--Script-->
 	<script type="text/javascript" src="js/canvas.js"></script>
 	<script type="text/javascript" src="js/mapgen.js"></script>
 	<script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
 	<script type="text/javascript" src="js/three.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 	<script>
+		let settings = {
+			height: $("#height").val(),
+			width: $("#width").val(),
+			frequency: $("#frequency").val(),
+			seed: $("#seed").val()
+		}
+		let terrainGenerator = new TerrainGenerator(settings);
 
 		function newMap() {
 			setInitValues();
-			let settings = {
-				height: $("#height").val(),
-				width: $("#width").val(),
-				frequency: $("#frequency").val(),
-				seed: $("#mapSeed").val()
-			}
-			let terrainGenerator = new TerrainGenerator(settings);
 			terrainGenerator.makeMap();
 			drawMonoArray(terrainGenerator.map.height);
 			updateCanvas();
-			console.log(terrainGenerator.map.height);
 		}
 
+		function updateMask() {
+			console.log("updating map!");
+			let a = Number($("#mask-a").val());
+			let b = Number($("#mask-b").val());
+			let c = Number($("#mask-c").val());
+			$("#a-val").text(a);
+			$("#b-val").text(b);
+			$("#c-val").text(c);
+			terrainGenerator.updateMask(a, b, c);
+			drawMonoArray(terrainGenerator.map.height);
+			updateCanvas();
+		}
+
+		function updateSeed() {
+			let seed = Number($("#seed").val());
+			terrainGenerator.updateSeed(seed);
+			drawMonoArray(terrainGenerator.map.height);
+			updateCanvas();
+		}
+
+		$("#seed").on("input change", () => updateSeed());
+		$("#mask-a").on("input change", () => updateMask());
+		$("#mask-b").on("input change", () => updateMask());
+		$("#mask-c").on("input change", () => updateMask());
+
 		window.onload = () => {
+			$("#seed").val(Math.random());
+			terrainGenerator.seed = $("#seed").val();
 			setInitValues();
 			newMap();
 		}
