@@ -31,7 +31,7 @@
 				</div>
 				<div class="row">
 					<div class="col-md-3"><strong>Resolution Scale</strong></div>
-					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=4></div>
+					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=1></div>
 				</div>
 			</div>
 			<!-- Map Seed and Frequency -->
@@ -73,7 +73,7 @@
 		</div>
 		<div class="row">
 			<div class="col-md-12 text-center">
-				<span id="cursor-pos"></span>
+				<span id="cursor-pos">0, 0 rgb(0, 0, 0)</span>
 			</div>
 		</div>
 
@@ -88,61 +88,72 @@
 
 
 	<!--Script-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/lodash/4.15.0/lodash.min.js"></script>
 	<script type="text/javascript" src="js/canvas.js"></script>
 	<script type="text/javascript" src="js/mapgen.js"></script>
 	<script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
 	<script type="text/javascript" src="js/three.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 	<script>
-		let settings = {
-			height: Number($("#height").val()),
-			width: Number($("#width").val()),
-			frequency: Number($("#frequency").val()),
-			seed: Number($("#seed").val()),
-			mask: {
-				a: Number($("#mask-a").val()),
-				b: Number($("#mask-b").val()),
-				c: Number($("#mask-c").val())
-			}
-		}
-		let terrainGenerator = new TerrainGenerator(settings);
+		let settings;
+		let mapGen;
 
 		function newMap() {
-			setInitValues();
-			terrainGenerator.makeMap();
-			//drawMonoArray(terrainGenerator.map.height);
-			drawRgbArray(terrainGenerator.map.biome);
-			updateCanvas();
+			settings = {
+				height: Number($("#height").val()) || 512,
+				width: Number($("#width").val()) || 512,
+				frequency: Number($("#frequency").val()),
+				seed: Number($("#seed").val()),
+				mask: {
+					a: Number($("#mask-a").val()),
+					b: Number($("#mask-b").val()),
+					c: Number($("#mask-c").val())
+				}
+			};
+			mapGen = createTerrainGenerator(settings)
+					.createBlankMaps()
+					.fillMaps()
+			mapGen.maps.rawHeight
+					.applyFBM(settings.width, settings.height)
+			mapGen.maps.height
+					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			setupCanvas();
+			drawMonoArray(mapGen.maps.height.map);
+			//drawRgbArray(mapGen.maps.biome);
 		}
 
 		function updateMask() {
-			console.log("updating map!");
 			let a = Number($("#mask-a").val());
 			let b = Number($("#mask-b").val());
 			let c = Number($("#mask-c").val());
 			$("#a-val").text(a);
 			$("#b-val").text(b);
 			$("#c-val").text(c);
-			terrainGenerator.updateMask(a, b, c);
-			//drawMonoArray(terrainGenerator.map.height);
-			drawRgbArray(terrainGenerator.map.biome);
-			updateCanvas();
+			mapGen.setMask({a, b, c})
+				.maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
+			drawMonoArray(mapGen.maps.height.map);
+			//drawRgbArray(mapGen.maps.biome);
 		}
 
 		function updateFrequency() {
 			let frequency = $("#frequency").val();
-			terrainGenerator.updateFrequency(frequency);
-			//drawMonoArray(terrainGenerator.map.height);
-			drawRgbArray(terrainGenerator.map.biome);
-			updateCanvas();
+			mapGen.setFrequencies(frequency).maps.rawHeight
+					.applyFBM(settings.width, settings.height)
+			mapGen.maps.height
+					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			drawMonoArray(mapGen.maps.height.map);
+			//drawRgbArray(terrainGenerator.map.biome);
 		}
 
 		function updateSeed() {
 			let seed = Number($("#seed").val());
-			terrainGenerator.updateSeed(seed);
-			//drawMonoArray(terrainGenerator.map.height);
-			drawRgbArray(terrainGenerator.map.biome);
+			mapGen.setSeeds(seed).maps.rawHeight
+					.applyFBM(settings.width, settings.height);
+			mapGen.maps.height
+					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			drawMonoArray(mapGen.maps.height.map);
+			//drawRgbArray(terrainGenerator.map.biome);
 			updateCanvas();
 		}
 
@@ -153,10 +164,8 @@
 		$("#mask-c").on("input change", () => updateMask());
 
 		window.onload = () => {
-			$("#seed").val(Math.random());
-			terrainGenerator.map.seed = Number($("#seed").val());
-			setInitValues();
 			newMap();
+			$("#seed").val(settings.seed);
 		}
 
 	</script>
