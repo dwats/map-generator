@@ -40,7 +40,9 @@ OpenSimplexNoise.prototype._getPerm = function(seed) {
   }
   seed = seed * 33797 + 1;
   seed = seed * 33797 + 1;
+  seed = seed * 33797 + 1;
   for (let i = 255; i >= 0; i--) {
+    if (isNaN(seed)) console.log("seed is NaN");
     let r = parseInt((seed + 31) % (i + 1));
     if (r < 0) {
         r += (i + 1);
