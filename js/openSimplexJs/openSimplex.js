@@ -4,14 +4,14 @@
 
 function OpenSimplexNoise(seed) {
   'use strict';
-  this.STRETCH_CONSTANT_2D = -0.211324865405187;    //(1/Math.sqrt(2+1)-1)/2;
-  this.SQUISH_CONSTANT_2D = 0.366025403784439;      //(Math.sqrt(2+1)-1)/2;
-  this.STRETCH_CONSTANT_3D = -1.0 / 6;              //(1/Math.sqrt(3+1)-1)/3;
-  this.SQUISH_CONSTANT_3D = 1.0 / 3;                //(Math.sqrt(3+1)-1)/3;
-  this.STRETCH_CONSTANT_4D = -0.138196601125011;    //(1/Math.sqrt(4+1)-1)/4;
-  this.SQUISH_CONSTANT_4D = 0.309016994374947;      //(Math.sqrt(4+1)-1)/4;
-  this.NORM_CONSTANT_2D = 47;
+  this.STRETCH_CONSTANT_2D = -0.211324865405187;    // (1/Math.sqrt(2+1)-1)/2;
+  this.SQUISH_CONSTANT_2D = 0.366025403784439;      // (Math.sqrt(2+1)-1)/2;
+  this.NORM_CONSTANT_2D = 1.0 / 47.0;
+  this.STRETCH_CONSTANT_3D = -1.0 / 6;              // (1/Math.sqrt(3+1)-1)/3;
+  this.SQUISH_CONSTANT_3D = 1.0 / 3;                // (Math.sqrt(3+1)-1)/3;
   this.NORM_CONSTANT_3D = 103;
+  this.STRETCH_CONSTANT_4D = -0.138196601125011;    // (1/Math.sqrt(4+1)-1)/4;
+  this.SQUISH_CONSTANT_4D = 0.309016994374947;      // (Math.sqrt(4+1)-1)/4;
   this.NORM_CONSTANT_4D = 30;
   this.DEFAULT_SEED = seed || 0;
   this.perm = [];
@@ -23,14 +23,14 @@ function OpenSimplexNoise(seed) {
 OpenSimplexNoise.prototype._getPermGradIndex3D = function(perm) {
   'use strict';
   for (let i = 0; i < 256; i++) {
-    //Since 3D has 24 gradients, simple bitmask won't work, so precompute modulo array.
+    // Since 3D has 24 gradients, simple bitmask won't work, so precompute modulo array.
     this.permGradIndex3D[i] = parseInt((perm[i] % (gradients3D.length / 3)) * 3);
   }
 };
 
-//Initializes the class using a permutation array generated from a 64-bit seed.
-//Generates a proper permutation (i.e. doesn't merely perform N successive pair swaps on a base array)
-//Uses a simple 64-bit LCG.
+// Initializes the class using a permutation array generated from a 64-bit seed.
+// Generates a proper permutation (i.e. doesn't merely perform N successive pair swaps on a base array)
+// Uses a simple 64-bit LCG.
 // NOTE: The JS version I've 'ported' uses a 32-bit LCG.
 OpenSimplexNoise.prototype._getPerm = function(seed) {
   'use strict';
@@ -42,12 +42,11 @@ OpenSimplexNoise.prototype._getPerm = function(seed) {
   seed = seed * 33797 + 1;
   seed = seed * 33797 + 1;
   for (let i = 255; i >= 0; i--) {
-    if (isNaN(seed)) console.log("seed is NaN");
     let r = parseInt((seed + 31) % (i + 1));
     if (r < 0) {
         r += (i + 1);
     }
-    this.perm[i] = parseInt(source[r]);
+    this.perm[i] = source[r];
     this.permGradIndex3D[i] = parseInt((this.perm[i] % (gradients3D.length / 3)) * 3);
     source[r] = parseInt(source[i]);
   }
@@ -89,8 +88,8 @@ OpenSimplexNoise.prototype.noise2D = function(x, y) {
 
   //Skew out to get actual coordinates of rhombus origin. We'll need these later.
   let squishOffset = (xsb + ysb) * this.SQUISH_CONSTANT_2D;
-  let xb = xsb + squishOffset;
-  let yb = ysb + squishOffset;
+  let dx0 = x - (xsb + squishOffset);
+  let dy0 = y - (ysb + squishOffset);
 
   //Compute grid coordinates relative to rhombus origin.
   let xins = xs - xsb;
@@ -98,10 +97,6 @@ OpenSimplexNoise.prototype.noise2D = function(x, y) {
 
   //Sum those together to get a value that determines which region we're in.
   let inSum = xins + yins;
-
-  //Positions relative to origin point.
-  let dx0 = x - xb;
-  let dy0 = y - yb;
 
   //We'll be defining these inside the next block and using them afterwards.
   let dx_ext, dy_ext;
@@ -187,16 +182,16 @@ OpenSimplexNoise.prototype.noise2D = function(x, y) {
     value += attn_ext * attn_ext * this._extrapolate2D(xsv_ext, ysv_ext, dx_ext, dy_ext);
   }
 
-  return value / this.NORM_CONSTANT_2D;
+  return value * this.NORM_CONSTANT_2D;
 };
 
 //Gradients for 2D. They approximate the directions to the
 //vertices of an octagon from the center.
 const gradients2D = [
-   5,  2,    2,  5,
-  -5,  2,   -2,  5,
-   5, -2,    2, -5,
-  -5, -2,   -2, -5,
+   5.0,  2.0,    2.0,  5.0,
+  -5.0,  2.0,   -2.0,  5.0,
+   5.0, -2.0,    2.0, -5.0,
+  -5.0, -2.0,   -2.0, -5.0,
 ];
 
 //Gradients for 3D. They approximate the directions to the
