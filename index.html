@@ -31,7 +31,7 @@
 				</div>
 				<div class="row">
 					<div class="col-md-3"><strong>Resolution Scale</strong></div>
-					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=1></div>
+					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=2></div>
 				</div>
 				<!-- Generate Button -->
 				<div class="row">
@@ -100,6 +100,16 @@
 	<script>
 		let settings;
 		let mapGen;
+		function fullRedraw() {
+			mapGen.maps.rawHeight.applyFBM(settings.width, settings.height)
+			mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.moisture.applyFBM(settings.width, settings.height);
+			mapGen.maps.temperature.applyFBM(settings.width, settings.height);
+			mapGen.maps.moisture.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.temperature.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
+			drawRgbArray(mapGen.maps.biome.map);
+		}
 
 		function newMap() {
 			settings = {
@@ -115,41 +125,40 @@
 			};
 			mapGen = createTerrainGenerator(settings)
 					.createBlankMaps()
-					.fillMaps()
-			mapGen.maps.rawHeight
-					.applyFBM(settings.width, settings.height)
-			mapGen.maps.height
-					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+					.fillMaps();
 			setupCanvas();
-			drawMonoArray(mapGen.maps.height.map);
-			//drawRgbArray(mapGen.maps.biome);
+			fullRedraw();
 		}
 
 		function updateMask() {
-			let a = Number($("#mask-a").val());
-			let b = Number($("#mask-b").val());
-			let c = Number($("#mask-c").val());
+			const a = Number($("#mask-a").val());
+			const b = Number($("#mask-b").val());
+			const c = Number($("#mask-c").val());
 			$("#a-val").text(a);
 			$("#b-val").text(b);
 			$("#c-val").text(c);
-			mapGen.setMask({a, b, c})
-				.maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
-			drawMonoArray(mapGen.maps.height.map);
+			mapGen.setMask({a, b, c}).maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
+			mapGen.maps.moisture.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.temperature.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
+			drawRgbArray(mapGen.maps.biome.map);
 			//drawRgbArray(mapGen.maps.biome);
 		}
 
 		function updateFrequency() {
-			let frequency = $("#frequency").val();
-			mapGen.setFrequencies(frequency).maps.rawHeight
-					.applyFBM(settings.width, settings.height)
-			mapGen.maps.height
-					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			drawMonoArray(mapGen.maps.height.map);
+			const frequency = $("#frequency").val();
+			mapGen.setFrequencies(frequency)
+			fullRedraw();
+			// .maps.rawHeight.applyFBM(settings.width, settings.height)
+			// mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			// mapGen.maps.moisture.applyFBM(settings.width, settings.height);
+			// mapGen.maps.temperature.applyFBM(settings.width, settings.height);
+			// drawMonoArray(mapGen.maps.height.map);
 			//drawRgbArray(terrainGenerator.map.biome);
 		}
 
 		function updateSeed() {
-			let seed = Number($("#seed").val());
+			const seed = Number($("#seed").val());
 			mapGen.setSeeds(seed).maps.rawHeight
 					.applyFBM(settings.width, settings.height);
 			mapGen.maps.height
