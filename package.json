@@ -1,0 +1,30 @@
+{
+  "name": "procedural-terrain-generator",
+  "version": "0.0.1",
+  "description": "A procedural map generator utilizing Open Simplex Noise (ported to JS from Java by me).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dwats/map-generator.git"
+  },
+  "keywords": [
+    "procedural",
+    "terrain"
+  ],
+  "author": "Eric Julius",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dwats/map-generator/issues"
+  },
+  "homepage": "https://github.com/dwats/map-generator#readme",
+  "devDependencies": {
+    "eslint": "^3.4.0",
+    "eslint-config-airbnb": "^11.0.0",
+    "eslint-plugin-import": "^1.14.0",
+    "eslint-plugin-jsx-a11y": "^2.2.1",
+    "eslint-plugin-react": "^6.2.0"
+  }
+}
