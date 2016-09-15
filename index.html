@@ -42,14 +42,35 @@
 			</div>
 			<!-- Map Seed and Frequency -->
 			<div class="col-md-4 bg">
-				<h3>Seed and Noise Frequency</h3>
+				<h3>Seed and Frequency (Zoom)</h3>
 				<div class="row">
-					<div class="col-md-2"><strong>Map Seed</strong></div>
-					<div class="col-md-8"><input id="seed" type="range" min=0.01 max=1 step=0.01 value=0.13></div>
+					<div class="col-md-2"><strong>Seed</strong></div>
+					<div class="col-md-8"><input id="seed" type="range" min=0.01 max=1 step=0.01 value=0.49></div>
 				</div>
 				<div class="row">
 					<div class="col-md-2"><strong>"Zoom"</strong></div>
-					<div class="col-md-8"><input id="frequency" type="range" min=0.25 max=10 step=0.25 value=1></div>
+					<div class="col-md-8"><input id="frequency" type="range" min=0.25 max=10 step=0.25 value=1.25></div>
+				</div>
+				<h4>Debug Show Map</h4>
+				<div class="row">
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(0)">rawHeight</button>
+					</div>
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(1)">Height</button>
+					</div>
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(2)">Moisture</button>
+					</div>
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(3)">Temp</button>
+					</div>
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(4)">SubTemp</button>
+					</div>
+					<div class="col-md-4">
+						<button id="gen" class="btn" onclick="debugDrawMap(5)">Biome</button>
+					</div>
 				</div>
 			</div>
 			<!-- Map Masking -->
@@ -57,17 +78,17 @@
 				<h3>Masking</h3>
 				<div class="row">
 					<div class="col-md-2"><strong>Height</strong></div>
-					<div class="col-md-8"><input id="mask-a" type="range" min=0.0 max=1.0 step=0.01 value=0.3></div>
+					<div class="col-md-8"><input id="mask-a" type="range" min=0.0 max=1.0 step=0.01 value=0.05></div>
 					<div id="a-val" class="col-md-2">0.3</div>
 				</div>
 				<div class="row">
 					<div class="col-md-2"><strong>Slope</strong></div>
-					<div class="col-md-8"><input id="mask-b" type="range" min=0.0 max=2.0 step=0.01 value=1.5></div>
+					<div class="col-md-8"><input id="mask-b" type="range" min=0.0 max=2.0 step=0.01 value=1.2></div>
 					<div id="b-val" class="col-md-2">1.5</div>
 				</div>
 				<div class="row">
-					<div class="col-md-2"><strong>S. Strength</strong></div>
-					<div class="col-md-8"><input id="mask-c" type="range" min=0.0 max=10.0 step=0.1 value=4.0></div>
+					<div class="col-md-2"><strong>Strength</strong></div>
+					<div class="col-md-8"><input id="mask-c" type="range" min=0.0 max=10.0 step=0.1 value=6.0></div>
 					<div id="c-val" class="col-md-2">4.0</div>
 				</div>
 		</div>
@@ -101,12 +122,14 @@
 		let settings;
 		let mapGen;
 		function fullRedraw() {
+			mapGen.maps.rawHeight.createMap(256,256)
 			mapGen.maps.rawHeight.applyFBM(settings.width, settings.height)
 			mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.moisture.applyFBM(settings.width, settings.height);
 			mapGen.maps.temperature.applyFBM(settings.width, settings.height);
-			mapGen.maps.moisture.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			mapGen.maps.temperature.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
+			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
 			drawRgbArray(mapGen.maps.biome.map);
 		}
@@ -138,34 +161,45 @@
 			$("#b-val").text(b);
 			$("#c-val").text(c);
 			mapGen.setMask({a, b, c}).maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
-			mapGen.maps.moisture.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			mapGen.maps.temperature.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
+			mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
+			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
+			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps);
 			drawRgbArray(mapGen.maps.biome.map);
 			//drawRgbArray(mapGen.maps.biome);
 		}
 
 		function updateFrequency() {
 			const frequency = $("#frequency").val();
-			mapGen.setFrequencies(frequency)
+			mapGen.setFrequencies(frequency);
 			fullRedraw();
-			// .maps.rawHeight.applyFBM(settings.width, settings.height)
-			// mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			// mapGen.maps.moisture.applyFBM(settings.width, settings.height);
-			// mapGen.maps.temperature.applyFBM(settings.width, settings.height);
-			// drawMonoArray(mapGen.maps.height.map);
-			//drawRgbArray(terrainGenerator.map.biome);
 		}
 
 		function updateSeed() {
 			const seed = Number($("#seed").val());
-			mapGen.setSeeds(seed).maps.rawHeight
-					.applyFBM(settings.width, settings.height);
-			mapGen.maps.height
-					.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			drawMonoArray(mapGen.maps.height.map);
-			//drawRgbArray(terrainGenerator.map.biome);
-			updateCanvas();
+			mapGen.setSeeds(seed);
+			fullRedraw();
+		}
+
+		function debugDrawMap(i) {
+			if (i === 0) {
+				drawMonoArray(mapGen.maps.rawHeight.map);
+			}
+			else if (i === 1) {
+				drawMonoArray(mapGen.maps.height.map);
+			}
+			else if (i === 2) {
+				drawMonoArray(mapGen.maps.moisture.map);
+			}
+			else if (i === 3) {
+				drawMonoArray(mapGen.maps.temperature.map);
+			}
+			else if (i === 4) {
+				drawMonoArray(mapGen.maps.subTemperature.map);
+			}
+			else if (i === 5) {
+				drawRgbArray(mapGen.maps.biome.map);
+			}
 		}
 
 		$("#frequency").on("input change", () => updateFrequency());
