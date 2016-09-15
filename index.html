@@ -31,7 +31,7 @@
 				</div>
 				<div class="row">
 					<div class="col-md-3"><strong>Resolution Scale</strong></div>
-					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=2 value=2></div>
+					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=1 value=2></div>
 				</div>
 				<!-- Generate Button -->
 				<div class="row">
@@ -103,8 +103,11 @@
 
 		<!--Canvas-->
 		<div class="row">
-			<div class="col-md-12 text-center">
-				<div id="canvas-shell"></div>
+			<div class="col-md-6 text-center">
+				<div id="canvas-shell-2d"></div>
+			</div>
+			<div class="col-md-6 text-center">
+				<div id="canvas-shell-3d"></div>
 			</div>
 		</div>
 	</div>
@@ -113,10 +116,11 @@
 	<!--Script-->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/lodash/4.15.0/lodash.min.js"></script>
+	<script type="text/javascript" src="js/three.js"></script>
+	<script type="text/javascript" src="js/OrbitControls.js"></script>
 	<script type="text/javascript" src="js/canvas.js"></script>
 	<script type="text/javascript" src="js/mapgen.js"></script>
 	<script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
-	<script type="text/javascript" src="js/three.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 	<script>
 		let settings;
@@ -131,6 +135,8 @@
 			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
+			drawMonoArray(mapGen.maps.height.map);
+			draw3d();
 			drawRgbArray(mapGen.maps.biome.map);
 		}
 
@@ -165,6 +171,8 @@
 			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps);
+			drawMonoArray(mapGen.maps.height.map);
+			draw3d();
 			drawRgbArray(mapGen.maps.biome.map);
 			//drawRgbArray(mapGen.maps.biome);
 		}
