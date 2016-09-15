@@ -1,6 +1,7 @@
 /* jshint esversion:6 */
-let resolutionScale, canvasData;
-let canvas = $('<canvas></canvas>').attr('id', 'canvas');
+let resolutionScale, canvasData, scene, renderer, camera, container, controls;
+let canvas = $('<canvas></canvas>').attr('id', 'canvas2d');
+let canvas2 = $('<canvas></canvas>').attr('id', 'canvas3d');
 let ctx = canvas.get(0).getContext('2d');
 
 function setupCanvas() {
@@ -17,7 +18,7 @@ function setupCanvas() {
     .width($('#width').val() * resolutionScale)
     .height($('#height').val() * resolutionScale);
   canvasData = ctx.getImageData(0, 0, canvas.get(0).width, canvas.get(0).height);
-  $('#canvas-shell').append(canvas);
+  $('#canvas-shell-2d').append(canvas);
 }
 
 canvas.mousemove((evt) => {
@@ -64,4 +65,78 @@ function drawRgbArray(frame) {
   }
 
   ctx.putImageData(canvasData, 0, 0);
+}
+
+function draw3d() {
+  scene = new THREE.Scene();
+  const screenWidth = 512;
+  const screenHeight = 512;
+  const viewAngle = 75;
+  const aspect = screenWidth / screenHeight;
+  const near = 0.1;
+  const far = 20000;
+  camera = new THREE.PerspectiveCamera(viewAngle, aspect, near, far);
+  camera.position.z = 1000;
+  camera.position.y = 240;
+  camera.position.x = 0;
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(screenWidth, screenHeight);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+  const geom = new THREE.PlaneGeometry(1000, 1000, 255, 255);
+  const material = new THREE.MeshLambertMaterial({
+    color: 0xccccff,
+    wireframe: false
+  });
+  const terrain = getTerrainFromCanvas();
+  for (let i = 0, l = geom.vertices.length; i < l; i++) {
+    const terrainValue = terrain[i] / 255;
+    geom.vertices[i].z += (terrainValue * 200);
+  }
+  geom.computeFaceNormals();
+  geom.computeVertexNormals();
+
+  addLights();
+
+  let plane = new THREE.Mesh(geom, material);
+  plane.position = new THREE.Vector3(0, 0, 0);
+  let q = new THREE.Quaternion();
+  q.setFromAxisAngle(new THREE.Vector3(-1, 0, 0), 90 * Math.PI / 180);
+  plane.quaternion.multiplyQuaternions(q, plane.quaternion);
+  scene.add(plane);
+
+  container = canvas2;
+  container = $('#canvas-shell-3d');
+  container.html(renderer.domElement);
+
+  render();
+}
+
+function render() {
+  requestAnimationFrame(render);
+  renderer.render(scene, camera);
+}
+
+function getTerrainFromCanvas() {
+  const data = ctx.getImageData(0, 0, canvas.get(0).width, canvas.get(0).width).data;
+  const normPixels = [];
+
+  for (let i = 0, n = data.length; i < n; i += 4) {
+    normPixels.push((data[i] + data[i + 1] + data[i + 2]) / 3);
+  }
+
+  return normPixels;
+}
+
+function addLights() {
+  var ambientLight = new THREE.AmbientLight(0x444444);
+  ambientLight.intensity = 0.0;
+  scene.add(ambientLight);
+
+  var directionalLight = new THREE.DirectionalLight(0xffffff);
+
+  directionalLight.position.set(900, 400, 0).normalize();
+  scene.add(directionalLight);
 }
