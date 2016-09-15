@@ -1,86 +1,29 @@
+'use strict';
 /**
  * Procedural Map Generator
  * By Eric Julius
  */
 
 /**
- * Determine the Biome of a given pixel based on height, moisture and temperature.
+ * TODO Comment
  */
-function getBiomeMap(maps, w, h) {
-  'use strict';
-  const output = [];
-  for (let x = 0; x < w; x++) {
-    output.push([]);
-    for (let y = 0; y < h; y++) {
-      let height = Math.abs(maps.height.map[x][y]);
-      const moisture = Math.abs(maps.moisture.map[x][y]);
-      const temperature = Math.abs(maps.temperature.map[x][y]);
-      const biome = getBiomeId(height, moisture, temperature);
-      let rgb = [];
-
-      switch (biome) {
-        case 0: // 0 - Tundra
-          rgb = [235, 235, 235];
-          break;
-        case 1: // 1 - Desert
-          rgb = [224, 255, 255];
-          break;
-        case 2: // 2 - Grass Desert
-          rgb = [238, 232, 170];
-          break;
-        case 3: // 3 - Savanna
-          rgb = [144, 228, 144];
-          break;
-        case 4: // 4 - Seasonal Forest (woods)
-          rgb = [128, 128, 0];
-          break;
-        case 5: // 5 - Taiga
-          rgb = [77, 108, 99];
-          break;
-        case 6: // 6 - Temperate Forest (seasonal forest)
-          rgb = [85, 107, 47];
-          break;
-        case 7: // 7 - Temperate Rain Forest (forest)
-          rgb = [34, 139, 34];
-          break;
-        case 8: // 8 - Swamp (rain forest)
-          rgb = [46, 139, 87];
-          break;
-        case 9: // 9 - Tropical Rain Forest (swamp)
-          rgb = [0, 100, 0];
-          break;
-        case 10: // 10 - Barren
-          rgb = [119, 136, 153];
-          break;
-        case 11: // 11 - Shallow Ocean
-          rgb = [15, 70, 105];
-          break;
-        case 12: // 12 - Deep Ocean
-          rgb = [10, 40, 255];
-          break;
-        default: // Error
-          console.log('BiomeErr H:', height, 'M:', moisture, 'T:', temperature);
-          rgb = [250, 128, 114];
-      }
-
-      height *= 255;
-      // height = ((height + 0.5 ) / 2.0) * 255;
-      // output[x].push(multiply([height, height, height], rgb));
-      output[x].push(overlay([height, height, height], rgb));
-      // output[x].push(rgb);
-    }
-  }
-  return output;
-}
-
-function multiply(rgb1, rgb2) {
+function subtract(t, b) { // eslint-disable-line no-unused-vars
   const result = [];
-  for (let i = 0; i < rgb1.length; i++) {
-    result.push(Math.floor((rgb1[i] * rgb2[i]) / 255));
+  for (let x = 0; x < t.length; x++) {
+    result.push([]);
+    for (let y = 0; y < t[x].length; y++) {
+      result[x].push(Math.max(t[x][y] - (b[x][y] * 0.5), 0));
+    }
   }
   return result;
 }
 
+/**
+ * Given a `t`arget and `b`lend values perform overlay color blending and return RGB array.
+ * @param {Array} `t`arget RGB array
+ * @param {Array} `b`lend RGB array
+ * @return {Array}
+ */
 function overlay(t, b) {
   const result = [];
   for (let i = 0; i < t.length; i++) {
@@ -102,14 +45,96 @@ function overlay(t, b) {
 }
 
 /**
- * Helper function to get pixel biome.
+ * Given height, moisture, and temperature map arrays generate a biome array.
+ * @param {Object} maps
+ */
+function getBiomeMap(maps) {
+  const biomeNames = ['Tundra', 'Desert', 'Grass Desert', 'Savanna', 'Seasonal Forest', 'Taiga', 'Temperate Forest', 'Temperate Rain Forest', 'Swamp', 'Tropical Rain Forest', 'Barren', 'Shallow Ocean', 'Deep Ocean', 'error'];
+  const output = [];
+  const mapHeight = maps.height.map;
+  const mapMoisture = maps.moisture.map;
+  const mapTemperature = maps.subTemperature.map;
+
+  for (let x = 0; x < mapHeight.length; x++) {
+    output.push([]);
+    for (let y = 0; y < mapHeight[x].length; y++) {
+      let h = Math.abs(mapHeight[x][y]);
+      const m = Math.abs(mapMoisture[x][y]);
+      const t = Math.abs(mapTemperature[x][y]);
+      let biome = getBiomeId(h, m, t);
+      let rgb = [];
+
+      switch (biome) {
+        case 0: // 0 - Tundra
+          rgb = [200, 200, 200];
+          break;
+        case 1: // 1 - Desert
+          rgb = [224, 255, 255];
+          break;
+        case 2: // 2 - Grass Desert
+          rgb = [153, 153, 0];
+          break;
+        case 3: // 3 - Savanna
+          rgb = [144, 228, 144];
+          break;
+        case 4: // 4 - Seasonal Forest (woods)
+          rgb = [128, 128, 0];
+          break;
+        case 5: // 5 - Taiga
+          rgb = [40, 90, 20];
+          break;
+        case 6: // 6 - Temperate Forest (seasonal forest)
+          rgb = [85, 107, 47];
+          break;
+        case 7: // 7 - Temperate Rain Forest (forest)
+          rgb = [34, 139, 34];
+          break;
+        case 8: // 8 - Swamp (rain forest)
+          rgb = [46, 139, 87];
+          break;
+        case 9: // 9 - Tropical Rain Forest (swamp)
+          rgb = [0, 100, 0];
+          break;
+        case 10: // 10 - Barren
+          rgb = [204, 204, 204];
+          break;
+        case 11: // 11 - Shallow Ocean
+          rgb = [15, 70, 105];
+          break;
+        case 12: // 12 - Deep Ocean
+          rgb = [10, 40, 255];
+          break;
+        default: // Error
+          console.log('BiomeErr H:', h, 'M:', m, 'T:', t);
+          rgb = [250, 128, 114];
+      }
+      h *= 255;
+      if (biome === -1) biome = 13;
+      const rgbOut = overlay([h, h, h], rgb);
+      rgbOut.push(biomeNames[biome]);
+      output[x].push(rgbOut);
+    }
+  }
+  return output;
+}
+
+/**
+ * Given height, moisture, and temperature return a biome id.
+ * @param {Number} height Between 0 and 1
+ * @param {Number} moisture Between 0 and 1
+ * @param {Number} temperature Between 0 and 1
+ * @return {Number} integer
  */
 function getBiomeId(height, moisture, temperature) {
-
-  if (height >= 0.95) {
-    return 10;
+  if (height >= 0.98) {
+    if (moisture < 0.25) {
+      return 10;
+    }
+    else if (moisture >= 0.25) {
+      return 0;
+    }
   }
-  else if (height < 0.95 && height >= 0.40) {
+  else if (height < 0.98 && height >= 0.30) {
     if (temperature < 0.25) {
       return 0;
     }
@@ -150,15 +175,13 @@ function getBiomeId(height, moisture, temperature) {
       }
     }
   }
-  else if (height < 0.40 && height >= 0.20) {
+  else if (height < 0.30 && height >= 0.15) {
     return 11;
   }
-  else if (height < 0.20) {
+  else if (height < 0.15) {
     return 12;
   }
-  else {
-    return -1;
-  }
+  return -1;
 }
 /**
  * Terrain Generator Factory
@@ -173,7 +196,6 @@ function getBiomeId(height, moisture, temperature) {
  * @param {Number} settings.mask.c
  */
 function createTerrainGenerator(settings) { // eslint-disable-line no-unused-vars
-  'use strict';
   const generator = {
     settings,
     maps: {
@@ -191,30 +213,32 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
     maps.height = createMap();
     maps.moisture = createMap();
     maps.temperature = createMap();
+    maps.subTemperature = {};
+    maps.subTemperature.map = [];
     // Raw Height Map
     maps.rawHeight
       .setSeed(s.seed)
       .setFrequency(s.frequency)
-      .setOctaves(8);
+      .setPower(2)
+      .setOctaves(12);
     // Derived Height Map
     maps.height
       .setSeed(s.seed)
-      .setFrequency(s.frequency)
-      .setOctaves(4);
+      .setFrequency(s.frequency);
     // Moisture Map
     maps.moisture
-      .setMultiplier(0.51)
+      .setMultiplier(3)
       .setSeed(s.seed)
       .setFrequency(s.frequency)
-      .setOctaves(5)
-      .setPower(1.2);
+      .setOctaves(6)
+      .setPower(0.9);
     // Temperature Map
     maps.temperature
-      .setMultiplier(0.52)
+      .setMultiplier(2)
       .setSeed(s.seed)
       .setFrequency(s.frequency)
-      .setOctaves(4)
-      .setPower(1.2);
+      .setOctaves(6)
+      .setPower(0.9);
     // Biome Map
     maps.biome = {
       map: [],
@@ -266,7 +290,6 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
  * TODO expand arguments so the createTerrainGenerator factory doesn't work so hard.
  */
 function createMap() {
-  'use strict';
   const map = {
     multiplier: 1,
     power: 1,
@@ -276,10 +299,8 @@ function createMap() {
     map: []
   };
   map.createMap = (w, h) => {
-    map.map = [];
     const output = [];
     const simplex = new OpenSimplexNoise(map.seed);
-    console.log(map.frequency);
     for (let x = 0; x < w; x++) {
       output.push([]);
       for (let y = 0; y < h; y++) {
@@ -299,7 +320,7 @@ function createMap() {
     for (let x = 0; x < w; x++) {
       output.push([]);
       for (let y = 0; y < h; y++) {
-        const gain = 0.65;
+        const gain = 0.45;
         const lacunarity = 2.1042;
         const nx = x / (w / 2.0);
         const ny = y / (h / 2.0);
@@ -312,7 +333,8 @@ function createMap() {
           frequency *= lacunarity;
           amplitude *= gain;
         }
-        e = Math.pow(Math.abs(e), map.power);
+        e = (e + 1) / 2.0;
+        e = Math.pow(e, map.power);
         output[x].push(e);
       }
     }
