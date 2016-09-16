@@ -125,6 +125,7 @@
 	<script>
 		let settings;
 		let mapGen;
+		let mapRender;
 		function fullRedraw() {
 			mapGen.maps.rawHeight.createMap(256,256)
 			mapGen.maps.rawHeight.applyFBM(settings.width, settings.height)
@@ -136,7 +137,7 @@
 			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
 			drawMonoArray(mapGen.maps.height.map);
-			draw3d();
+			mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
 			drawRgbArray(mapGen.maps.biome.map);
 		}
 
@@ -156,7 +157,72 @@
 					.createBlankMaps()
 					.fillMaps();
 			setupCanvas();
+			drawMonoArray(mapGen.maps.height.map);
 			fullRedraw();
+		}
+
+		function newRender() {
+			mapRender = Create3dObject({});
+			const s = mapRender.settings;
+			const r = mapRender;
+			const scene = mapRender.scene;
+			r.newCamera({
+				viewAngle: s.viewAngle,
+				aspect: s.aspect,
+				near: s.near,
+				far: s.far,
+				pos: {
+					x: 0,
+					y: 240,
+					z: 1000
+				}
+			})
+				.newRenderer({
+					alpha: true,
+					antialias: true
+				})
+				.newControl(r.cameras[0], r.renderers[0].domElement)
+				.newContainer($('#canvas-shell-3d'), r.renderers[0].domElement)
+				.newGeometry({}, getTerrainFromCanvas())
+				.newMaterial('MeshLambertMaterial', {
+					color: 0x65877b,
+					wireframe: false
+				})
+				.newPlane(scene.geometries[0], scene.materials[0], {}, true)
+				.newGeometry({})
+				.newMaterial('MeshLambertMaterial', {
+			    color: 0x00ccff,
+			    wireframe: false,
+			    transparent: true,
+			    opacity: 0.7
+				})
+				.newPlane(scene.geometries[1], scene.materials[1], {
+					rotate: {
+						x: (-Math.PI / 2)
+					},
+					position: {
+						y: 76
+					}
+				})
+				.newLight('AmbientLight', {
+					color: 0x444444,
+					intensity: 0.0
+				})
+				.newLight('DirectionalLight', {
+					color: 0xffffff,
+					position: {
+						x: 900,
+						y: 400,
+						z: 0
+					}
+				})
+				.newScene();
+				mapRenderAnimate();
+		}
+
+		function mapRenderAnimate() {
+			requestAnimationFrame(mapRenderAnimate);
+			mapRender.render(mapRender.scene.scenes[0], mapRender.cameras[0]);
 		}
 
 		function updateMask() {
@@ -168,13 +234,10 @@
 			$("#c-val").text(c);
 			mapGen.setMask({a, b, c}).maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
 			mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
-			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
 			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps);
 			drawMonoArray(mapGen.maps.height.map);
-			draw3d();
+			mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
 			drawRgbArray(mapGen.maps.biome.map);
-			//drawRgbArray(mapGen.maps.biome);
 		}
 
 		function updateFrequency() {
@@ -217,6 +280,7 @@
 		$("#mask-c").on("input change", () => updateMask());
 
 		window.onload = () => {
+			newRender();
 			newMap();
 			$("#seed").val(settings.seed);
 		}
