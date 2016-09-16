@@ -1,12 +1,14 @@
 /* jshint esversion:6 */
 let resolutionScale;
 let canvasData;
+/*
 let scene;
 let renderer;
 let camera;
 let container;
 let controls;
 let geoGround;
+*/
 const canvas = $('<canvas></canvas>').attr('id', 'canvas2d');
 const ctx = canvas.get(0).getContext('2d');
 
@@ -73,21 +75,21 @@ function drawRgbArray(frame) { // eslint-disable-line no-unused-vars
   ctx.putImageData(canvasData, 0, 0);
 }
 
-function Create3dObject() { // eslint-disable-line no-unused-vars
+function Create3dObject(settings) { // eslint-disable-line no-unused-vars
   const create3dObject = {
     settings: {
-      screenHeight: 512,
-      screenWidth: 512,
-      viewAngle: 75,
-      aspect: this.settings.screenWidth / this.settings.screenHeight,
-      near: 0.1,
-      far: 20000
+      screenHeight: settings.screenHeight || 512,
+      screenWidth: settings.screenWidth || 512,
+      viewAngle: settings.viewAngle || 75,
+      aspect: settings.aspect || 1,
+      near: settings.near || 0.1,
+      far: settings.far || 20000
     },
     renderers: [],
     controls: [],
     containers: [],
+    cameras: [],
     scene: {
-      cameras: [],
       scenes: [],
       geometries: [],
       materials: [],
@@ -95,18 +97,159 @@ function Create3dObject() { // eslint-disable-line no-unused-vars
       lights: [],
     }
   };
-  create3dObject.newRenderer = () => {};
-  create3dObject.newContainer = () => {};
-  create3dObject.newCamera = () => {};
-  create3dObject.newControl = () => {};
-  create3dObject.newGeometry = () => {};
-  create3dObject.newMaterial = () => {};
-  create3dObject.newPlane = () => {};
-  create3dObject.newLight = () => {};
-  create3dObject.newScene = () => {};
-  create3dObject.updateGeometry = () => {};
-  create3dObject.render = () => {};
-  create3dObject.animate = () => {};
+  create3dObject.newContainer = (d, r) => {
+    const self = create3dObject;
+    d.html(r);
+    self.containers.push(d);
+    return self;
+  };
+  create3dObject.newRenderer = (options) => {
+    const self = create3dObject;
+    const s = self.settings;
+    const r = self.renderers;
+    const out = new THREE.WebGLRenderer(options || {});
+    out.setSize(s.screenWidth, s.screenHeight);
+    r.push(out);
+    return self;
+  };
+  create3dObject.newCamera = (options) => {
+    const self = create3dObject;
+    const s = self.settings;
+    const c = self.cameras;
+    const o = options || s;
+    const out = new THREE.PerspectiveCamera(o.viewAngle, o.aspect, o.near, o.far);
+    if (o.pos) {
+      out.position.x = o.pos.x || 0;
+      out.position.y = o.pos.y || 0;
+      out.position.z = o.pos.z || 0;
+    }
+    c.push(out);
+    return self;
+  };
+  create3dObject.newControl = (cam, rde) => {
+    const self = create3dObject;
+    const c = self.controls;
+    const out = new THREE.OrbitControls(cam, rde);
+    c.push(out);
+    return self;
+  };
+  create3dObject.newGeometry = (options, vertexArr) => {
+    const self = create3dObject;
+    const g = self.scene.geometries;
+    const o = options;
+    const v = vertexArr;
+    const out = new THREE.PlaneGeometry(
+      o.width || 512,
+      o.height || 512,
+      o.segmentWidth || 255,
+      o.segmentHeight || 255
+    );
+    if (v) {
+      for (let i = 0, l = out.vertices.length; i < l; i++) {
+        const val = v[i] / 255;
+        out.vertices[i].z += (val * 255);
+      }
+      out.computeFaceNormals();
+      out.computeVertexNormals();
+    }
+    g.push(out);
+    return self;
+  };
+  create3dObject.newMaterial = (material, options) => {
+    const self = create3dObject;
+    const m = self.scene.materials;
+    const o = options;
+    const out = new THREE[material](o);
+    m.push(out);
+    return self;
+  };
+  create3dObject.newPlane = (g, m, options, hasQ) => {
+    const self = create3dObject;
+    const p = self.scene.planes;
+    const o = options;
+    const out = new THREE.Mesh(g, m);
+    out.position = new THREE.Vector3(0, 0, 0);
+    if (hasQ) {
+      // TODO Gain a deeper understanding of Quaternions.
+      const q = new THREE.Quaternion();
+      q.setFromAxisAngle(new THREE.Vector3(-1, 0, 0), (90 * Math.PI) / 180);
+      out.quaternion.multiplyQuaternions(q, out.quaternion);
+    }
+    if (o.rotate) {
+      out.rotateX(o.rotate.x || 0);
+      out.rotateY(o.rotate.y || 0);
+      out.rotateZ(o.rotate.z || 0);
+    }
+    if (o.position) {
+      out.position.x = o.position.x || 0;
+      out.position.y = o.position.y || 0;
+      out.position.z = o.position.z || 0;
+    }
+    p.push(out);
+    return self;
+  };
+  create3dObject.newLight = (type, options) => {
+    const self = create3dObject;
+    const l = self.scene.lights;
+    const o = options;
+    const out = new THREE[type](o.color);
+    out.intensity = o.intensity || 1.0;
+    if (o.position) {
+      out.position.set(
+        o.position.x || 0,
+        o.position.y || 0,
+        o.position.z || 0
+      ).normalize();
+    }
+    l.push(out);
+    return self;
+  };
+  create3dObject.newScene = () => {
+    const self = create3dObject;
+    const p = self.scene.planes;
+    const l = self.scene.lights;
+    const s = self.scene.scenes;
+    const out = new THREE.Scene();
+    for (let i = 0; i < p.length; i++) {
+      out.add(p[i]);
+    }
+    for (let i = 0; i < l.length; i++) {
+      out.add(l[i]);
+    }
+    s.push(out);
+    return self;
+  };
+  create3dObject.cameraLookAt = (cam, pos) => {
+    const self = create3dObject;
+    cam.lookAt(new THREE.Vector3(pos.x, pos.y, pos.z));
+    return self;
+  }
+  create3dObject.updateGeometry = (index, options, vertexArr) => {
+    const self = create3dObject;
+    const g = self.scene.geometries;
+    const v = vertexArr;
+    const out = g[index];
+    if (v) {
+      for (let i = 0, l = out.vertices.length; i < l; i++) {
+        const val = v[i] / 255;
+        out.vertices[i].z = (val * 255);
+      }
+      out.computeFaceNormals();
+      out.computeVertexNormals();
+      out.verticesNeedUpdate = true;
+      out.normalsNeedUpdate = true;
+    }
+    g[index] = out;
+    return self;
+  };
+  create3dObject.render = (scene, cam) => {
+    const self = create3dObject;
+    const r = self.renderers;
+    for (let i = 0; i < r.length; i++) {
+      r[i].render(scene, cam);
+    }
+    return create3dObject;
+  };
   return create3dObject;
 }
 
@@ -141,7 +284,7 @@ function draw3d() { // eslint-disable-line no-unused-vars
   const terrain = getTerrainFromCanvas();
   for (let i = 0, l = geoGround.vertices.length; i < l; i++) {
     const terrainValue = terrain[i] / 255;
-    geoGround.vertices[i].z += (terrainValue * 200);
+    geoGround.vertices[i].z += (terrainValue * 255);
   }
   geoGround.computeFaceNormals();
   geoGround.computeVertexNormals();
@@ -167,7 +310,7 @@ function draw3d() { // eslint-disable-line no-unused-vars
   const planeWater = new THREE.Mesh(geoWater, matWater);
   planeWater.position = new THREE.Vector3(0, 0, 0);
   planeWater.rotateX(-Math.PI / 2);
-  planeWater.position.y = 60;
+  planeWater.position.y = 76;
   scene.add(planeWater);
 
   addLights();
