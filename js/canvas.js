@@ -1,10 +1,16 @@
 /* jshint esversion:6 */
-let resolutionScale, canvasData, scene, renderer, camera, container, controls;
-let canvas = $('<canvas></canvas>').attr('id', 'canvas2d');
-let canvas2 = $('<canvas></canvas>').attr('id', 'canvas3d');
-let ctx = canvas.get(0).getContext('2d');
+let resolutionScale;
+let canvasData;
+let scene;
+let renderer;
+let camera;
+let container;
+let controls;
+let geoGround;
+const canvas = $('<canvas></canvas>').attr('id', 'canvas2d');
+const ctx = canvas.get(0).getContext('2d');
 
-function setupCanvas() {
+function setupCanvas() { // eslint-disable-line no-unused-vars
   resolutionScale = $('#scale').val() || 1;
   canvas.prop({
     width: $('#width').val(),
@@ -35,11 +41,11 @@ canvas.mousemove((evt) => {
 
 
 // Monochrome Draw
-function drawMonoArray(frame) {
+function drawMonoArray(frame) { // eslint-disable-line no-unused-vars
   'use strict';
   for (let x = 0; x < frame.length; x++) {
     for (let y = 0; y < frame[x].length; y++) {
-      const index = (x + y * canvas.get(0).width) * 4;
+      const index = (x + (y * canvas.get(0).width)) * 4;
       let pixel = frame[x][y] * 255;
       if (pixel > 255) pixel = 255;
       for (let i = 0; i < 3; i++) {
@@ -53,10 +59,10 @@ function drawMonoArray(frame) {
 }
 
 // RGB Draw
-function drawRgbArray(frame) {
+function drawRgbArray(frame) { // eslint-disable-line no-unused-vars
   for (let x = 0; x < frame.length; x++) {
     for (let y = 0; y < frame[x].length; y++) {
-      let index = (x + y * canvas.get(0).width) * 4;
+      const index = (x + (y * canvas.get(0).width)) * 4;
       for (let i = 0; i < 3; i++) {
         canvasData.data[index + i] = frame[x][y][i];
       }
@@ -67,7 +73,45 @@ function drawRgbArray(frame) {
   ctx.putImageData(canvasData, 0, 0);
 }
 
-function draw3d() {
+function Create3dObject() { // eslint-disable-line no-unused-vars
+  const create3dObject = {
+    settings: {
+      screenHeight: 512,
+      screenWidth: 512,
+      viewAngle: 75,
+      aspect: this.settings.screenWidth / this.settings.screenHeight,
+      near: 0.1,
+      far: 20000
+    },
+    renderers: [],
+    controls: [],
+    containers: [],
+    scene: {
+      cameras: [],
+      scenes: [],
+      geometries: [],
+      materials: [],
+      planes: [],
+      lights: [],
+    }
+  };
+  create3dObject.newRenderer = () => {};
+  create3dObject.newContainer = () => {};
+  create3dObject.newCamera = () => {};
+  create3dObject.newControl = () => {};
+  create3dObject.newGeometry = () => {};
+  create3dObject.newMaterial = () => {};
+  create3dObject.newPlane = () => {};
+  create3dObject.newLight = () => {};
+  create3dObject.newScene = () => {};
+  create3dObject.updateGeometry = () => {};
+  create3dObject.render = () => {};
+  create3dObject.animate = () => {};
+  return create3dObject;
+}
+
+function draw3d() { // eslint-disable-line no-unused-vars
+  // TODO refactor this.
   scene = new THREE.Scene();
   const screenWidth = 512;
   const screenHeight = 512;
@@ -79,38 +123,54 @@ function draw3d() {
   camera.position.z = 1000;
   camera.position.y = 240;
   camera.position.x = 0;
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(screenWidth, screenHeight);
   controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-  const geom = new THREE.PlaneGeometry(1000, 1000, 255, 255);
-  const material = new THREE.MeshLambertMaterial({
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+  container = $('#canvas-shell-3d');
+  container.html(renderer.domElement);
+
+  // Geometry Ground
+  geoGround = new THREE.PlaneGeometry(1024, 1024, 255, 255);
+  const matGround = new THREE.MeshLambertMaterial({
     color: 0xccccff,
     wireframe: false
   });
   const terrain = getTerrainFromCanvas();
-  for (let i = 0, l = geom.vertices.length; i < l; i++) {
+  for (let i = 0, l = geoGround.vertices.length; i < l; i++) {
     const terrainValue = terrain[i] / 255;
-    geom.vertices[i].z += (terrainValue * 200);
+    geoGround.vertices[i].z += (terrainValue * 200);
   }
-  geom.computeFaceNormals();
-  geom.computeVertexNormals();
+  geoGround.computeFaceNormals();
+  geoGround.computeVertexNormals();
+
+  // Geometry Water
+  const geoWater = new THREE.PlaneGeometry(1000, 1000, 11, 11);
+  const matWater = new THREE.MeshLambertMaterial({
+    color: 0x00ccff,
+    wireframe: false,
+    transparent: true,
+    opacity: 0.7
+  });
+
+  // Plane Ground
+  const planeGround = new THREE.Mesh(geoGround, matGround);
+  planeGround.position = new THREE.Vector3(0, 0, 0);
+  const q = new THREE.Quaternion();
+  q.setFromAxisAngle(new THREE.Vector3(-1, 0, 0), (90 * Math.PI) / 180);
+  planeGround.quaternion.multiplyQuaternions(q, planeGround.quaternion);
+  scene.add(planeGround);
+
+  // Plane Water
+  const planeWater = new THREE.Mesh(geoWater, matWater);
+  planeWater.position = new THREE.Vector3(0, 0, 0);
+  planeWater.rotateX(-Math.PI / 2);
+  planeWater.position.y = 60;
+  scene.add(planeWater);
 
   addLights();
-
-  let plane = new THREE.Mesh(geom, material);
-  plane.position = new THREE.Vector3(0, 0, 0);
-  let q = new THREE.Quaternion();
-  q.setFromAxisAngle(new THREE.Vector3(-1, 0, 0), 90 * Math.PI / 180);
-  plane.quaternion.multiplyQuaternions(q, plane.quaternion);
-  scene.add(plane);
-
-  container = canvas2;
-  container = $('#canvas-shell-3d');
-  container.html(renderer.domElement);
-
   render();
 }
 
@@ -131,12 +191,12 @@ function getTerrainFromCanvas() {
 }
 
 function addLights() {
-  var ambientLight = new THREE.AmbientLight(0x444444);
+  const ambientLight = new THREE.AmbientLight(0x444444);
+  const directionalLight = new THREE.DirectionalLight(0xffffff);
+
   ambientLight.intensity = 0.0;
-  scene.add(ambientLight);
-
-  var directionalLight = new THREE.DirectionalLight(0xffffff);
-
   directionalLight.position.set(900, 400, 0).normalize();
+
+  scene.add(ambientLight);
   scene.add(directionalLight);
 }
