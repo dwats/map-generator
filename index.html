@@ -1,290 +1,306 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<title>Map Gen</title>
-	<link rel="stylesheet" type="text/css" href="css/base.css">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+  <title>Map Gen</title>
+  <link rel="stylesheet" type="text/css" href="css/base.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 </head>
+
 <body>
-	<div class="container-fluid">
-		<h1>Map Gen</h1>
-		<div>Creating terrain with simple biomes using OpenSimplex noise along with Brownian Motion. Biomes are generated from two additional 2D arrays representing temperature and moisture.</div>
-		<!-- User Inputs -->
-		<div class="row">
-			<!-- Canvas/Array Dimensions and Resolution Scaling -->
-			<div class="col-md-4 bg">
-				<h3>Canvas Dimensions and Resolution Scale</h3>
-				<div class="row">
-					<div class="col-md-12">
-						<form class="form-inline">
-							<div class="form-group">
-								<label for="width">Width</label>
-								<input type="number" class="form-control" id="width" placeholder="512" min=12 value=256>
-							</div>
-							<div class="form-group">
-								<label for="height">Height</label>
-								<input type="number" class="form-control" id="height" placeholder="512" min=12 value=256>
-							</div>
-						</form>
-					</div>
-				</div>
-				<div class="row">
-					<div class="col-md-3"><strong>Resolution Scale</strong></div>
-					<div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=1 value=2></div>
-				</div>
-				<!-- Generate Button -->
-				<div class="row">
-					<div class="col-md-12">
-						<button id="gen" class="btn" onclick="newMap()">Resize</button>
-					</div>
-				</div>
-			</div>
-			<!-- Map Seed and Frequency -->
-			<div class="col-md-4 bg">
-				<h3>Seed and Frequency (Zoom)</h3>
-				<div class="row">
-					<div class="col-md-2"><strong>Seed</strong></div>
-					<div class="col-md-8"><input id="seed" type="range" min=0.01 max=1 step=0.01 value=0.49></div>
-				</div>
-				<div class="row">
-					<div class="col-md-2"><strong>"Zoom"</strong></div>
-					<div class="col-md-8"><input id="frequency" type="range" min=0.25 max=10 step=0.25 value=1.25></div>
-				</div>
-				<h4>Debug Show Map</h4>
-				<div class="row">
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(0)">rawHeight</button>
-					</div>
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(1)">Height</button>
-					</div>
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(2)">Moisture</button>
-					</div>
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(3)">Temp</button>
-					</div>
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(4)">SubTemp</button>
-					</div>
-					<div class="col-md-4">
-						<button id="gen" class="btn" onclick="debugDrawMap(5)">Biome</button>
-					</div>
-				</div>
-			</div>
-			<!-- Map Masking -->
-			<div class="col-md-4 bg">
-				<h3>Masking</h3>
-				<div class="row">
-					<div class="col-md-2"><strong>Height</strong></div>
-					<div class="col-md-8"><input id="mask-a" type="range" min=0.0 max=1.0 step=0.01 value=0.05></div>
-					<div id="a-val" class="col-md-2">0.3</div>
-				</div>
-				<div class="row">
-					<div class="col-md-2"><strong>Slope</strong></div>
-					<div class="col-md-8"><input id="mask-b" type="range" min=0.0 max=2.0 step=0.01 value=1.2></div>
-					<div id="b-val" class="col-md-2">1.5</div>
-				</div>
-				<div class="row">
-					<div class="col-md-2"><strong>Strength</strong></div>
-					<div class="col-md-8"><input id="mask-c" type="range" min=0.0 max=10.0 step=0.1 value=6.0></div>
-					<div id="c-val" class="col-md-2">4.0</div>
-				</div>
-		</div>
-	</div>
-	<div class="container">
-		<!-- Mouse Pos -->
-		<div class="row">
-			<div class="col-md-12 text-center">
-				<span id="cursor-pos">0, 0 rgb(0, 0, 0)</span>
-			</div>
-		</div>
+  <div class="container-fluid">
+    <h1>Map Gen</h1>
+    <div>Creating terrain with simple biomes using OpenSimplex noise along with Brownian Motion. Biomes are generated from two additional 2D arrays representing temperature and moisture.</div>
+    <!-- User Inputs -->
+    <div class="row">
+      <!-- Canvas/Array Dimensions and Resolution Scaling -->
+      <div class="col-md-4 bg">
+        <h3>Canvas Dimensions and Resolution Scale</h3>
+        <div class="row">
+          <div class="col-md-12">
+            <form class="form-inline">
+              <div class="form-group">
+                <label for="width">Width</label>
+                <input type="number" class="form-control" id="width" placeholder="512" min=12 value=256>
+              </div>
+              <div class="form-group">
+                <label for="height">Height</label>
+                <input type="number" class="form-control" id="height" placeholder="512" min=12 value=256>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-3"><strong>Resolution Scale</strong></div>
+          <div class="col-md-8"><input id="scale" type="range" min=1 max=7 step=1 value=2></div>
+        </div>
+        <!-- Generate Button -->
+        <div class="row">
+          <div class="col-md-12">
+            <button id="gen" class="btn" onclick="newMap()">Resize</button>
+          </div>
+        </div>
+      </div>
+      <!-- Map Seed and Frequency -->
+      <div class="col-md-4 bg">
+        <h3>Seed and Frequency (Zoom)</h3>
+        <div class="row">
+          <div class="col-md-2"><strong>Seed</strong></div>
+          <div class="col-md-8"><input id="seed" type="range" min=0.01 max=1 step=0.01 value=0.49></div>
+        </div>
+        <div class="row">
+          <div class="col-md-2"><strong>"Zoom"</strong></div>
+          <div class="col-md-8"><input id="frequency" type="range" min=0.25 max=10 step=0.25 value=1.25></div>
+        </div>
+        <h4>Debug Show Map</h4>
+        <div class="row">
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(0)">rawHeight</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(1)">Height</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(2)">Moisture</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(3)">Temp</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(4)">SubTemp</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(5)">Biome</button>
+          </div>
+          <div class="col-md-4">
+            <button id="gen" class="btn" onclick="debugDrawMap(6)">Contour</button>
+          </div>
+        </div>
+      </div>
+      <!-- Map Masking -->
+      <div class="col-md-4 bg">
+        <h3>Masking</h3>
+        <div class="row">
+          <div class="col-md-2"><strong>Height</strong></div>
+          <div class="col-md-8"><input id="mask-a" type="range" min=0.0 max=1.0 step=0.01 value=0.21></div>
+          <div id="a-val" class="col-md-2">0.3</div>
+        </div>
+        <div class="row">
+          <div class="col-md-2"><strong>Slope</strong></div>
+          <div class="col-md-8"><input id="mask-b" type="range" min=0.0 max=2.0 step=0.01 value=0.63></div>
+          <div id="b-val" class="col-md-2">1.5</div>
+        </div>
+        <div class="row">
+          <div class="col-md-2"><strong>Strength</strong></div>
+          <div class="col-md-8"><input id="mask-c" type="range" min=0.0 max=10.0 step=0.1 value=3.0></div>
+          <div id="c-val" class="col-md-2">4.0</div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <!-- Mouse Pos -->
+      <div class="row">
+        <div class="col-md-12 text-center">
+          <span id="cursor-pos">0, 0 rgb(0, 0, 0)</span>
+        </div>
+      </div>
 
-		<!--Canvas-->
-		<div class="row">
-			<div class="col-md-6 text-center">
-				<div id="canvas-shell-2d"></div>
-			</div>
-			<div class="col-md-6 text-center">
-				<div id="canvas-shell-3d"></div>
-			</div>
-		</div>
-	</div>
+      <!--Canvas-->
+      <div class="row">
+        <div class="col-md-6 text-center">
+          <div id="canvas-shell-2d"></div>
+        </div>
+        <div class="col-md-6 text-center">
+          <div id="canvas-shell-3d"></div>
+        </div>
+      </div>
+    </div>
 
 
-	<!--Script-->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/lodash/4.15.0/lodash.min.js"></script>
-	<script type="text/javascript" src="js/three.js"></script>
-	<script type="text/javascript" src="js/OrbitControls.js"></script>
-	<script type="text/javascript" src="js/canvas.js"></script>
-	<script type="text/javascript" src="js/mapgen.js"></script>
-	<script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
-	<script>
-		let settings;
-		let mapGen;
-		let mapRender;
-		function fullRedraw() {
-			mapGen.maps.rawHeight.createMap(256,256)
-			mapGen.maps.rawHeight.applyFBM(settings.width, settings.height)
-			mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			mapGen.maps.moisture.applyFBM(settings.width, settings.height);
-			mapGen.maps.temperature.applyFBM(settings.width, settings.height);
-			mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
-			//mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			//mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
-			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
-			drawMonoArray(mapGen.maps.height.map);
-			mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
-			drawRgbArray(mapGen.maps.biome.map);
-		}
+    <!--Script-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/lodash/4.15.0/lodash.min.js"></script>
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/OrbitControls.js"></script>
+    <script type="text/javascript" src="js/canvas.js"></script>
+    <script type="text/javascript" src="js/mapgen.js"></script>
+    <script type="text/javascript" src="js/openSimplexJs/openSimplex.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script>
+      let settings;
+      let mapGen;
+      let mapRender;
 
-		function newMap() {
-			settings = {
-				height: Number($("#height").val()) || 512,
-				width: Number($("#width").val()) || 512,
-				frequency: Number($("#frequency").val()),
-				seed: Number($("#seed").val()),
-				mask: {
-					a: Number($("#mask-a").val()),
-					b: Number($("#mask-b").val()),
-					c: Number($("#mask-c").val())
-				}
-			};
-			mapGen = createTerrainGenerator(settings)
-					.createBlankMaps()
-					.fillMaps();
-			setupCanvas();
-			drawMonoArray(mapGen.maps.height.map);
-			fullRedraw();
-		}
+      function fullRedraw() {
+        mapGen.maps.rawHeight.createMap(256, 256);
+        mapGen.maps.rawHeight.applyFBM(settings.width, settings.height);
+        mapGen.maps.height.applyMask(mapGen.maps.rawHeight.map, settings.mask.a, settings.mask.b, settings.mask.c);
+        mapGen.maps.contour.map = getContourMap(mapGen.maps.height.map);
+        mapGen.maps.moisture.applyFBM(settings.width, settings.height);
+        mapGen.maps.temperature.applyFBM(settings.width, settings.height);
+        mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
+        //mapGen.maps.moisture.applyMask(mapGen.maps.moisture.map, settings.mask.a, settings.mask.b, settings.mask.c);
+        //mapGen.maps.temperature.applyMask(mapGen.maps.temperature.map, settings.mask.a, settings.mask.b, settings.mask.c);
+        mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps, settings.width, settings.height);
+        drawMonoArray(mapGen.maps.height.map);
+        mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
+        drawRgbArray(mapGen.maps.biome.map);
+      }
 
-		function newRender() {
-			mapRender = Create3dObject({});
-			const s = mapRender.settings;
-			const r = mapRender;
-			const scene = mapRender.scene;
-			r.newCamera({
-				viewAngle: s.viewAngle,
-				aspect: s.aspect,
-				near: s.near,
-				far: s.far,
-				pos: {
-					x: 0,
-					y: 240,
-					z: 1000
-				}
-			})
-				.newRenderer({
-					alpha: true,
-					antialias: true
-				})
-				.newControl(r.cameras[0], r.renderers[0].domElement)
-				.newContainer($('#canvas-shell-3d'), r.renderers[0].domElement)
-				.newGeometry({}, getTerrainFromCanvas())
-				.newMaterial('MeshLambertMaterial', {
-					color: 0x65877b,
-					wireframe: false
-				})
-				.newPlane(scene.geometries[0], scene.materials[0], {}, true)
-				.newGeometry({})
-				.newMaterial('MeshLambertMaterial', {
-			    color: 0x00ccff,
-			    wireframe: false,
-			    transparent: true,
-			    opacity: 0.7
-				})
-				.newPlane(scene.geometries[1], scene.materials[1], {
-					rotate: {
-						x: (-Math.PI / 2)
-					},
-					position: {
-						y: 76
-					}
-				})
-				.newLight('AmbientLight', {
-					color: 0x444444,
-					intensity: 0.0
-				})
-				.newLight('DirectionalLight', {
-					color: 0xffffff,
-					position: {
-						x: 900,
-						y: 400,
-						z: 0
-					}
-				})
-				.newScene();
-				mapRenderAnimate();
-		}
+      function newMap() {
+        settings = {
+          height: Number($("#height").val()) || 512,
+          width: Number($("#width").val()) || 512,
+          frequency: Number($("#frequency").val()),
+          seed: Number($("#seed").val()),
+          mask: {
+            a: Number($("#mask-a").val()),
+            b: Number($("#mask-b").val()),
+            c: Number($("#mask-c").val())
+          }
+        };
+        mapGen = createTerrainGenerator(settings)
+          .createBlankMaps()
+          .fillMaps();
+        setupCanvas();
+        drawMonoArray(mapGen.maps.height.map);
+        fullRedraw();
+      }
 
-		function mapRenderAnimate() {
-			requestAnimationFrame(mapRenderAnimate);
-			mapRender.render(mapRender.scene.scenes[0], mapRender.cameras[0]);
-		}
+      function newRender() {
+        mapRender = Create3dObject({});
+        const s = mapRender.settings;
+        const r = mapRender;
+        const scene = mapRender.scene;
+        r.newCamera({
+            viewAngle: s.viewAngle,
+            aspect: s.aspect,
+            near: s.near,
+            far: s.far,
+            pos: {
+              x: 0,
+              y: 340,
+              z: 400
+            }
+          })
+          .newRenderer({
+            alpha: true,
+            antialias: true
+          })
+          .newControl(r.cameras[0], r.renderers[0].domElement)
+          .newContainer($('#canvas-shell-3d'), r.renderers[0].domElement)
+          .newGeometry({}, getTerrainFromCanvas())
+          .newMaterial('MeshLambertMaterial', {
+            color: 0x65877b,
+            wireframe: false
+          })
+          .newPlane(scene.geometries[0], scene.materials[0], {}, true)
+          .newGeometry({})
+          .newMaterial('MeshLambertMaterial', {
+            color: 0x00ccff,
+            wireframe: false,
+            transparent: true,
+            opacity: 0.7
+          })
+          .newPlane(scene.geometries[1], scene.materials[1], {
+            rotate: {
+              x: (-Math.PI / 2)
+            },
+            position: {
+              y: 76
+            }
+          })
+          .newLight('AmbientLight', {
+            color: 0x444444,
+            intensity: 0.0
+          })
+          .newLight('DirectionalLight', {
+            color: 0xffffff,
+            position: {
+              x: 900,
+              y: 400,
+              z: 0
+            }
+          })
+          .newScene();
+        mapRenderAnimate();
+      }
 
-		function updateMask() {
-			const a = Number($("#mask-a").val());
-			const b = Number($("#mask-b").val());
-			const c = Number($("#mask-c").val());
-			$("#a-val").text(a);
-			$("#b-val").text(b);
-			$("#c-val").text(c);
-			mapGen.setMask({a, b, c}).maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
-			mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
-			mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps);
-			drawMonoArray(mapGen.maps.height.map);
-			mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
-			drawRgbArray(mapGen.maps.biome.map);
-		}
+      function mapRenderAnimate() {
+        requestAnimationFrame(mapRenderAnimate);
+        mapRender.render(mapRender.scene.scenes[0], mapRender.cameras[0]);
+      }
 
-		function updateFrequency() {
-			const frequency = $("#frequency").val();
-			mapGen.setFrequencies(frequency);
-			fullRedraw();
-		}
+      function updateMask() {
+        const a = Number($("#mask-a").val());
+        const b = Number($("#mask-b").val());
+        const c = Number($("#mask-c").val());
+        $("#a-val").text(a);
+        $("#b-val").text(b);
+        $("#c-val").text(c);
+        mapGen.setMask({
+          a,
+          b,
+          c
+        }).maps.height.applyMask(mapGen.maps.rawHeight.map, a, b, c);
+        mapGen.maps.contour.map = getContourMap(mapGen.maps.height.map);
+        mapGen.maps.subTemperature.map = subtract(mapGen.maps.temperature.map, mapGen.maps.height.map);
+        mapGen.maps.biome.map = mapGen.maps.biome.getBiomes(mapGen.maps);
+        drawMonoArray(mapGen.maps.height.map);
+        mapRender.updateGeometry(0, {}, getTerrainFromCanvas());
+        drawRgbArray(mapGen.maps.biome.map);
+      }
 
-		function updateSeed() {
-			const seed = Number($("#seed").val());
-			mapGen.setSeeds(seed);
-			fullRedraw();
-		}
+      function updateFrequency() {
+        const frequency = $("#frequency").val();
+        mapGen.setFrequencies(frequency);
+        fullRedraw();
+      }
 
-		function debugDrawMap(i) {
-			if (i === 0) {
-				drawMonoArray(mapGen.maps.rawHeight.map);
-			}
-			else if (i === 1) {
-				drawMonoArray(mapGen.maps.height.map);
-			}
-			else if (i === 2) {
-				drawMonoArray(mapGen.maps.moisture.map);
-			}
-			else if (i === 3) {
-				drawMonoArray(mapGen.maps.temperature.map);
-			}
-			else if (i === 4) {
-				drawMonoArray(mapGen.maps.subTemperature.map);
-			}
-			else if (i === 5) {
-				drawRgbArray(mapGen.maps.biome.map);
-			}
-		}
+      function updateSeed() {
+        const seed = Number($("#seed").val());
+        mapGen.setSeeds(seed);
+        fullRedraw();
+      }
 
-		$("#frequency").on("input change", () => updateFrequency());
-		$("#seed").on("input change", () => updateSeed());
-		$("#mask-a").on("input change", () => updateMask());
-		$("#mask-b").on("input change", () => updateMask());
-		$("#mask-c").on("input change", () => updateMask());
+      function debugDrawMap(i) {
+        if (i === 0) {
+          drawMonoArray(mapGen.maps.rawHeight.map);
+        }
+        else if (i === 1) {
+          drawMonoArray(mapGen.maps.height.map);
+        }
+        else if (i === 2) {
+          drawMonoArray(mapGen.maps.moisture.map);
+        }
+        else if (i === 3) {
+          drawMonoArray(mapGen.maps.temperature.map);
+        }
+        else if (i === 4) {
+          drawMonoArray(mapGen.maps.subTemperature.map);
+        }
+        else if (i === 5) {
+          drawRgbArray(mapGen.maps.biome.map);
+        }
+        else if (i === 6) {
+          drawRgbArray(mapGen.maps.contour.map)
+        }
+      }
 
-		window.onload = () => {
-			newRender();
-			newMap();
-			$("#seed").val(settings.seed);
-		}
+      $("#frequency").on("input change", () => updateFrequency());
+      $("#seed").on("input change", () => updateSeed());
+      $("#mask-a").on("input change", () => updateMask());
+      $("#mask-b").on("input change", () => updateMask());
+      $("#mask-c").on("input change", () => updateMask());
 
-	</script>
+      window.onload = () => {
+        newRender();
+        newMap();
+        $("#seed").val(settings.seed);
+      }
+
+    </script>
 </body>
+
 </html>
