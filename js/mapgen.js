@@ -183,6 +183,26 @@ function getBiomeId(height, moisture, temperature) {
   }
   return -1;
 }
+
+function getContourMap(height) {
+  const step = 0.03;
+  const h = height;
+  const output = [];
+  for (let x = 0; x < h.length; x++) {
+    output.push([]);
+    for (let y = 0; y < h[x].length; y++) {
+      for (let e = 0; e < 1; e += step) {
+        if (h[x][y] <= e && h[x][y] > e - step) {
+          const color = (e * 2) * 255;
+          output[x].push([color, color, color]);
+          break;
+        }
+      }
+    }
+  }
+  return output;
+}
+
 /**
  * Terrain Generator Factory
  * @param {Object} settings initial starting parameters
@@ -214,7 +234,9 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
     maps.moisture = createMap();
     maps.temperature = createMap();
     maps.subTemperature = {};
+    maps.contour = {};
     maps.subTemperature.map = [];
+    maps.contour.map = [];
     // Raw Height Map
     maps.rawHeight
       .setSeed(s.seed)
@@ -357,6 +379,7 @@ function createMap() {
         e = (e + a) - (b * Math.pow(d, c));
         if (e < 0.0) e = 0.0;
         if (e > 1.0) e = 1.0;
+        e = Number(e.toFixed(4));
         output[x].push(e);
       }
     }
