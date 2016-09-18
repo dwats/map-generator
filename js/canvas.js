@@ -114,9 +114,8 @@ function Create3dObject(settings) { // eslint-disable-line no-unused-vars
   };
   create3dObject.newCamera = (options) => {
     const self = create3dObject;
-    const s = self.settings;
     const c = self.cameras;
-    const o = options || s;
+    const o = options;
     const out = new THREE.PerspectiveCamera(o.viewAngle, o.aspect, o.near, o.far);
     if (o.pos) {
       out.position.x = o.pos.x || 0;
@@ -223,7 +222,7 @@ function Create3dObject(settings) { // eslint-disable-line no-unused-vars
     const self = create3dObject;
     cam.lookAt(new THREE.Vector3(pos.x, pos.y, pos.z));
     return self;
-  }
+  };
   create3dObject.updateGeometry = (index, options, vertexArr) => {
     const self = create3dObject;
     const g = self.scene.geometries;
