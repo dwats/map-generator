@@ -4,7 +4,7 @@
   "description": "A procedural map generator utilizing Open Simplex Noise (ported to JS from Java by me).",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
     "eslint-config-airbnb": "^11.0.0",
     "eslint-plugin-import": "^1.14.0",
     "eslint-plugin-jsx-a11y": "^2.2.1",
-    "eslint-plugin-react": "^6.2.0"
+    "eslint-plugin-react": "^6.2.0",
+    "mocha": "^3.0.2"
   }
 }
