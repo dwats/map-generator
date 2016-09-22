@@ -1,9 +1,9 @@
+'use strict';
 /* jshint esversion:6 */
 // OpenSimplex Noise by Kurt Spencer
 // Ported to JS (poorly) by Eric Julius
 
 function OpenSimplexNoise(seed) {
-  'use strict';
   this.STRETCH_CONSTANT_2D = -0.211324865405187;    // (1/Math.sqrt(2+1)-1)/2;
   this.SQUISH_CONSTANT_2D = 0.366025403784439;      // (Math.sqrt(2+1)-1)/2;
   this.NORM_CONSTANT_2D = 1.0 / 47.0;
@@ -21,7 +21,6 @@ function OpenSimplexNoise(seed) {
 }
 
 OpenSimplexNoise.prototype._getPermGradIndex3D = function(perm) {
-  'use strict';
   for (let i = 0; i < 256; i++) {
     // Since 3D has 24 gradients, simple bitmask won't work, so precompute modulo array.
     this.permGradIndex3D[i] = parseInt((perm[i] % (gradients3D.length / 3)) * 3);
@@ -33,7 +32,6 @@ OpenSimplexNoise.prototype._getPermGradIndex3D = function(perm) {
 // Uses a simple 64-bit LCG.
 // NOTE: The JS version I've 'ported' uses a 32-bit LCG.
 OpenSimplexNoise.prototype._getPerm = function(seed) {
-  'use strict';
   let source = [];
   for (let i = 0; i < 256; i++) {
     source[i] = i;
@@ -230,3 +228,5 @@ const gradients4D = [
      3, -1, -1, -1,      1, -3, -1, -1,      1, -1, -3, -1,      1, -1, -1, -3,
     -3, -1, -1, -1,     -1, -3, -1, -1,     -1, -1, -3, -1,     -1, -1, -1, -3,
 ];
+
+module.exports = OpenSimplexNoise;
