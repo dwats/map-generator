@@ -1,4 +1,5 @@
 'use strict';
+const OpenSimplexNoise = require('../js/openSimplexJs/openSimplex.js');
 /**
  * Procedural Map Generator
  * By Eric Julius
@@ -227,6 +228,7 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
     }
   };
   generator.createBlankMaps = () => {
+    // TODO Move map creation out of the factory and into the front end code.
     const s = generator.settings;
     const maps = generator.maps;
     maps.rawHeight = createMap();
@@ -309,15 +311,15 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
 
 /**
  * Map Factory
- * TODO expand arguments so the createTerrainGenerator factory doesn't work so hard.
+ * TODO expand (add settings object input) arguments so the createTerrainGenerator factory doesn't work so hard.
  */
 function createMap() {
   const map = {
     multiplier: 1,
     power: 1,
-    seed: 0,
-    frequency: 0,
-    octaves: 0,
+    seed: 1,
+    frequency: 1,
+    octaves: 1,
     map: []
   };
   map.createMap = (w, h) => {
@@ -335,6 +337,7 @@ function createMap() {
     map.map = output;
     return map;
   };
+  map.generate = createMap;
   map.applyFBM = (w, h) => {
     const s = map;
     const simplex = new OpenSimplexNoise(s.seed);
@@ -408,3 +411,10 @@ function createMap() {
   };
   return map;
 }
+
+module.exports = {
+  createMap,
+  createTerrainGenerator,
+  getBiomeMap,
+  getContourMap
+};
