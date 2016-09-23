@@ -1,23 +1,23 @@
 'use strict';
 const assert = require('assert');
 const mapgen = require('../js/mapgen.js');
-const OpenSimplexNoise = require('../js/openSimplexJs/openSimplex.js');
+const OpenSimplexNoise = require('../js/OpenSimplexNoise/opensimplex.js');
 
 const createMap = mapgen.createMap;
 
 describe('Map', function () {
   let dim;
-  describe('#createMap()', function () {
-    let testMap;
-    const w = 100;
-    const h = 100;
+  let testMap;
+  const w = 100;
+  const h = 100;
+  describe('#makeMap()', function () {
     beforeEach(function () {
       dim = 1;
       testMap = createMap()
-        .generate(w, h)
-        .applyFBM(w, h)
+        .setSeed(Math.random())
+        .makeMap(w, h)
         .map;
-    })
+    });
     it('should return an array', function () {
       assert.equal(true, Array.isArray(testMap));
     });
@@ -63,6 +63,15 @@ describe('Map', function () {
         }
       }
       assert.equal(0, strCount);
+    });
+    it('should throw when createMap().octaves === 0', function () {
+      assert.throws(() => {
+        testMap = createMap()
+          .setOctaves(0)
+          .makeMap(w, h)
+          .applyFBM(w, h)
+          .map;
+      }, /0 octaves/, 'Expected "0 octaves"');
     });
   });
   // Not sure where to put these testing functions, but they "work" here.
