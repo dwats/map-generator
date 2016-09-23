@@ -34,11 +34,16 @@ canvas.mousemove((evt) => {
   const y = Math.round(evt.offsetY / resolutionScale);
   const pos = `(${x}, ${y})`;
   // const rawRGB = ctx.getImageData(x / resolutionScale, y / resolutionScale, 1, 1).data;
-  const message = `${pos}<br/>e: ${mapGen.maps.height.map[x][y]}
-    <br/>st: ${mapGen.maps.subTemperature.map[x][y]}
-    <br/>m: ${mapGen.maps.moisture.map[x][y]}
-    <br/>b: ${mapGen.maps.biome.map[x][y][3]}`;
-  $('#cursor-pos').html(message);
+
+  try {
+    const message = `${pos}<br/>e: ${mapGen.maps.height.map[x][y]}
+      <br/>st: ${mapGen.maps.subTemperature.map[x][y]}
+      <br/>m: ${mapGen.maps.moisture.map[x][y]}
+      <br/>b: ${mapGen.maps.biome.map[x][y][3]}`;
+    $('#cursor-pos').html(message);
+  }
+  catch (e) {}
+
 });
 
 
@@ -138,15 +143,15 @@ function Create3dObject(settings) { // eslint-disable-line no-unused-vars
     const o = options;
     const v = vertexArr;
     const out = new THREE.PlaneGeometry(
-      o.width || 512,
-      o.height || 512,
-      o.segmentWidth || 255,
-      o.segmentHeight || 255
+      o.width,
+      o.height,
+      o.segmentHeight || 10,
+      o.segmentWidth || 10
     );
     if (v) {
       for (let i = 0, l = out.vertices.length; i < l; i++) {
         const val = v[i] / 255;
-        out.vertices[i].z += (val * 255);
+        out.vertices[i].z += (val * 25);
       }
       out.computeFaceNormals();
       out.computeVertexNormals();
@@ -261,4 +266,17 @@ function getTerrainFromCanvas() {
   }
 
   return normPixels;
+}
+
+function getTerrainFromArray(arr) {
+  if (!Array.isArray(arr)) throw new Error('Argument type not an array.');
+  const output = [];
+
+  for (let x = 0; x < arr.length; x++) {
+    for (let y = 0; y < arr[x].length; y++) {
+      output.push(((arr[y][x] + 1) / 2.0) * 255);
+    }
+  }
+
+  return output;
 }
