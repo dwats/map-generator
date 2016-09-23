@@ -1,9 +1,14 @@
-'use strict';
-const OpenSimplexNoise = require('../js/openSimplexJs/openSimplex.js');
 /**
  * Procedural Map Generator
  * By Eric Julius
  */
+'use strict';
+try {
+  var OpenSimplexNoise = require('../js/OpenSimplexNoise/opensimplex.js');
+}
+catch (e) {
+  console.log(e);
+}
 
 /**
  * TODO Comment
@@ -251,18 +256,18 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
       .setFrequency(s.frequency);
     // Moisture Map
     maps.moisture
-      .setMultiplier(3)
+      .setMultiplier(1)
       .setSeed(s.seed)
       .setFrequency(s.frequency)
       .setOctaves(6)
-      .setPower(0.9);
+      .setPower(1);
     // Temperature Map
     maps.temperature
       .setMultiplier(2)
       .setSeed(s.seed)
       .setFrequency(s.frequency)
       .setOctaves(6)
-      .setPower(0.9);
+      .setPower(1);
     // Biome Map
     maps.biome = {
       map: [],
@@ -272,29 +277,29 @@ function createTerrainGenerator(settings) { // eslint-disable-line no-unused-var
   };
   generator.fillMaps = () => {
     _.forOwn(generator.maps, (map) => {
-      if ({}.hasOwnProperty.call(map, 'createMap')) {
+      if ({}.hasOwnProperty.call(map, 'makeMap')) {
         const s = generator.settings;
-        map.createMap(s.width, s.height);
+        map.makeMap(s.width, s.height);
       }
     });
     return generator;
   };
   generator.setFrequencies = (frequency) => {
     _.forOwn(generator.maps, (map) => {
-      if ({}.hasOwnProperty.call(map, 'createMap')) {
+      if ({}.hasOwnProperty.call(map, 'setFrequency')) {
         const s = generator.settings;
         map.setFrequency(frequency)
-          .createMap(s.width, s.height);
+          .makeMap(s.width, s.height);
       }
     });
     return generator;
   };
   generator.setSeeds = (seed) => {
     _.forOwn(generator.maps, (map) => {
-      if ({}.hasOwnProperty.call(map, 'createMap')) {
+      if ({}.hasOwnProperty.call(map, 'setSeed')) {
         const s = generator.settings;
         map.setSeed(seed)
-          .createMap(s.width, s.height);
+          .makeMap(s.width, s.height);
       }
     });
     return generator;
@@ -322,26 +327,28 @@ function createMap() {
     octaves: 1,
     map: []
   };
-  map.createMap = (w, h) => {
+  map.makeBasicMap = (w, h) => {
+    const s = map;
+    const simplex = new OpenSimplexNoise(s.seed);
     const output = [];
-    const simplex = new OpenSimplexNoise(map.seed);
     for (let x = 0; x < w; x++) {
       output.push([]);
       for (let y = 0; y < h; y++) {
         const nx = x / (w / 2.0);
         const ny = y / (h / 2.0);
-        const e = simplex.noise2D(nx * map.frequency, ny * map.frequency);
+        const e = simplex.noise2D(nx * s.frequency, ny * s.frequency);
         output[x].push(e);
       }
     }
-    map.map = output;
+    s.map = output;
     return map;
   };
-  map.generate = createMap;
-  map.applyFBM = (w, h) => {
+  map.makeMap = (w, h) => {
     const s = map;
+    if (!s.octaves) throw new Error('Cannot run FBM with 0 octaves.');
     const simplex = new OpenSimplexNoise(s.seed);
     const output = [];
+
     for (let x = 0; x < w; x++) {
       output.push([]);
       for (let y = 0; y < h; y++) {
@@ -358,13 +365,15 @@ function createMap() {
           frequency *= lacunarity;
           amplitude *= gain;
         }
-        e = (e + 1) / 2.0;
+
+        if (isNaN(Math.pow(e, map.power))) throw new Error(`NaN in makeMap ${e}, ${x}, ${y}, ${map.power}`)
+        // e = (e + 1) / 2.0;
         e = Math.pow(e, map.power);
         output[x].push(e);
       }
     }
 
-    map.map = output;
+    s.map = output;
     return map;
   };
   map.applyMask = (refMap, a, b, c) => {
@@ -389,6 +398,18 @@ function createMap() {
     map.map = output;
     return map;
   };
+  map.normalizeHeight = (mult, w, h) => {
+    const m = map;
+    const output = [];
+    for (let x = 0; x < w; x++) {
+      output.push([]);
+      for (let y = 0; y < h; y++) {
+        output[x].push((m.map[x][y]) * mult);
+      }
+    }
+    m.map = output;
+    return map;
+  };
   map.setMultiplier = (a) => {
     map.multiplier = Number(a);
     return map;
@@ -402,7 +423,7 @@ function createMap() {
     return map;
   };
   map.setOctaves = (a) => {
-    map.octaves = Number(a) / map.multiplier;
+    map.octaves = Number(a);
     return map;
   };
   map.setPower = (a) => {
@@ -412,9 +433,12 @@ function createMap() {
   return map;
 }
 
-module.exports = {
-  createMap,
-  createTerrainGenerator,
-  getBiomeMap,
-  getContourMap
-};
+try {
+  module.exports = {
+    createMap,
+    createTerrainGenerator,
+    getBiomeMap,
+    getContourMap
+  };
+}
+catch (e) {}
